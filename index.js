@@ -1,7 +1,7 @@
 const Koa = require('koa');
 const Router = require('@koa/router');
 const cors = require('@koa/cors');
-const { createPool } = require('slonik');
+const { createPool, sql } = require('slonik');
 const routes = require('./routes');
 const poll = require('./poll');
 
@@ -14,8 +14,12 @@ app.use(cors());
 const index = new Router();
 
 // Environment variable
-const endpoints = process.env['ENDPOINT'].split(',').map(s => s.trim());
-const connections = process.env['DB_CONNECTION'].split(',').map(s => s.trim());
+const endpoints = process.env['ENDPOINT'].split(',').map((s) => s.trim());
+const connections = process.env['DB_CONNECTION']
+  .split(',')
+  .map((s) => s.trim());
+/** @type {import('slonik').DatabasePoolType[]} */
+const pools = [];
 
 if (endpoints.length === 0 || endpoints.length !== connections.length) {
   console.error('Invalid endpoint/connection configuration provided');
@@ -29,11 +33,12 @@ endpoints.forEach((endpoint, i) => {
   console.log('Connection', connection);
 
   const pool = createPool(connection);
+  pools.push(pool);
 
-  routes.forEach(route => {
+  routes.forEach((route) => {
     if ('poll' in route) {
       const fn = async () =>
-        await pool.connect(connection => {
+        await pool.connect((connection) => {
           return connection.any(route.query());
         });
       const { call } = poll(fn, {
@@ -59,7 +64,7 @@ endpoints.forEach((endpoint, i) => {
         console.log('/' + route.path);
         console.log('Request', ctx.request);
         try {
-          const result = await pool.connect(connection => {
+          const result = await pool.connect((connection) => {
             return connection.any(route.query(ctx.query));
           });
           console.log('Response', result);
@@ -80,6 +85,26 @@ endpoints.forEach((endpoint, i) => {
   });
 
   index.use('/' + endpoints[i], router.routes(), router.allowedMethods());
+});
+
+index.get('/status', async (ctx, next) => {
+  try {
+    const queries = await Promise.all(
+      pools.map((pool) => pool.one(sql`select 1 as result`)),
+    );
+    const ok = queries.every((query) => query.result === 1);
+    if (ok) {
+      ctx.status = 200;
+      ctx.response.body = 'ok';
+      await next();
+      return;
+    }
+  } catch (e) { }
+
+  ctx.status = 500;
+  ctx.response.body = 'not ok';
+  await next();
+  return;
 });
 
 app.use(index.routes()).use(index.allowedMethods());
