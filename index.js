@@ -107,6 +107,19 @@ index.get('/status', async (ctx, next) => {
   return;
 });
 
+const draw = require('./image');
+
+index.get('/card/:accountId', async (ctx, next) => {
+  ctx.set('content-type', 'image/png');
+  try {
+    ctx.body = (await draw(ctx.params.accountId, ctx.query.network ?? 'mainnet')).toBuffer();
+  } catch (e) {
+    console.log(e);
+    ctx.status = 500;
+  }
+  await next();
+});
+
 app.use(index.routes()).use(index.allowedMethods());
 
 console.log('Waiting for requests...');
