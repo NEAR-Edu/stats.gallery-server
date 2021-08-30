@@ -1,6 +1,8 @@
-FROM node:14-alpine
+FROM node:14-bullseye
 
 WORKDIR /usr/src/app
+
+RUN apt-get update || : && apt-get install python3 -y
 
 COPY package*.json ./
 
@@ -10,4 +12,4 @@ RUN npm ci --only=production
 COPY . .
 
 EXPOSE 3000
-CMD [ "node", "index.js" ]
+CMD [ "npm", "run", "start" ]
