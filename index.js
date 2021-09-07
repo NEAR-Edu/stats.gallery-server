@@ -99,7 +99,7 @@ index.get('/status', async (ctx, next) => {
       await next();
       return;
     }
-  } catch (e) { }
+  } catch (e) {}
 
   ctx.status = 500;
   ctx.response.body = 'not ok';
@@ -109,10 +109,12 @@ index.get('/status', async (ctx, next) => {
 
 const draw = require('./image');
 
-index.get('/card/:accountId', async (ctx, next) => {
+index.get('/card/:accountId/card.png', async (ctx, next) => {
   ctx.set('content-type', 'image/png');
   try {
-    ctx.body = (await draw(ctx.params.accountId, ctx.query.network ?? 'mainnet')).toBuffer();
+    ctx.body = (
+      await draw(ctx.params.accountId, ctx.query['network'] ?? 'mainnet')
+    ).toBuffer();
   } catch (e) {
     console.log(e);
     ctx.status = 500;
