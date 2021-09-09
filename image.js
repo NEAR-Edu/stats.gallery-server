@@ -168,7 +168,7 @@ async function draw(accountName, network) {
 
   ctx.save();
   ctx.translate(xRule + levelWidth + 20, yRule);
-  const scoreWidth = drawScore(ctx, score);
+  const scoreWidth = drawScore(ctx, score ?? '0');
   ctx.restore();
 
   yRule += 156;
@@ -191,28 +191,28 @@ async function draw(accountName, network) {
 
   ctx.fillStyle = '#aaa';
   ctx.font = '400 45px "DM Sans"';
-  ctx.fillText('NEAR Account Statistics', 20, 60);
+  ctx.fillText('NEAR Account Statistics', 60, 60);
 
   ctx.save();
   ctx.fillStyle = '#bcd';
   ctx.font = '700 65px "DM Sans"';
   const rank = humanizeLevel(currentLevel(score).level);
   const rankTextSize = ctx.measureText(rank);
-  ctx.translate(width - 20 - rankTextSize.width, height - 100);
+  ctx.translate(width - 60 - rankTextSize.width, height - 100);
   ctx.fillText(rank, 0, 0);
   ctx.restore();
 
   const icon = await loadImage(__dirname + '/img/icon.png');
   const iconWidth = 200;
   const iconHeight = (iconWidth / icon.width) * icon.height;
-  ctx.drawImage(icon, width - iconWidth - 50, 80, iconWidth, iconHeight);
+  ctx.drawImage(icon, width - iconWidth - 70, 80, iconWidth, iconHeight);
 
   const logo = await loadImage(__dirname + '/img/logo.png');
   const logoWidth = 400;
   const logoHeight = (logoWidth / logo.width) * logo.height;
   ctx.drawImage(
     logo,
-    width - logoWidth - 20,
+    width - logoWidth - 60,
     height - logoHeight - 10,
     logoWidth,
     logoHeight,
