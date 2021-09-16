@@ -5,6 +5,11 @@ const { createPool, sql } = require('slonik');
 const routes = require('./routes');
 const poll = require('./poll');
 
+const {
+  getTopAccountsByBalance,
+  getTopAccountsByScore,
+} = require('./leaderboards');
+
 const app = new Koa();
 const port = process.env['PORT'] || 3000;
 console.log('Listening on port ' + port + '...');
@@ -76,6 +81,16 @@ endpoints.forEach((endpoint, i) => {
         }
       });
     }
+  });
+
+  router.get('/leaderboard-balance', async (ctx, next) => {
+    ctx.body = await getTopAccountsByBalance();
+    await next();
+  });
+
+  router.get('/leaderboard-score', async (ctx, next) => {
+    ctx.body = await getTopAccountsByScore();
+    await next();
   });
 
   process.on('exit', async () => {
