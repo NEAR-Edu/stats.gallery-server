@@ -255,6 +255,9 @@ class LeaderboardCache {
 
     const accountsWithNull = await this.queryAccountsWithNullsFromCache();
 
+    console.log('Updates with nulls', accountsWithNull.length);
+    console.log('Updates to new/stale accounts', accountsToUpdate.length);
+
     console.log('Querying & writing balances...');
     const balances = await this.queryBalancesFromIndexerAndUpdate(
       accountsWithNull.concat(accountsToUpdate),
