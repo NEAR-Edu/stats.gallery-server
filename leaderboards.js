@@ -290,14 +290,6 @@ class LeaderboardCache {
   }
 }
 
-// if (require.main === module) {
-//   // node ./leaderboards.js
-//   update();
-// } else {
-  module.exports = {
-    // update,
-    // getTopAccountsByBalance,
-    // getTopAccountsByScore,
-    LeaderboardCache,
-  };
-// }
+module.exports = {
+  LeaderboardCache,
+};

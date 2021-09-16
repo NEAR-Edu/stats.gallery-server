@@ -4,13 +4,8 @@ const cors = require('@koa/cors');
 const { createPool, sql } = require('slonik');
 const routes = require('./routes');
 const poll = require('./poll');
-
-const {
-  // getTopAccountsByBalance,
-  // getTopAccountsByScore,
-  // update: updateLeaderboards,
-  LeaderboardCache,
-} = require('./leaderboards');
+const { sleep } = require('./utils/sleep');
+const { LeaderboardCache } = require('./leaderboards');
 
 const app = new Koa();
 const port = process.env['PORT'] || 3000;
