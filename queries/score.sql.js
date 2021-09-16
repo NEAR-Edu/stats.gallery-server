@@ -2,7 +2,7 @@ const { sql } = require('slonik');
 
 module.exports = params => {
   return sql`
-    select sum(
+    select coalesce(sum(
       case
         when action_kind = 'TRANSFER'
           and signer_account_id = ${params.account_id} then 10
@@ -16,7 +16,7 @@ module.exports = params => {
           and signer_account_id = ${params.account_id} then 100
         else 0
       end
-    ) as result
+    ), 0) as result
     from (
       select *
       from transactions

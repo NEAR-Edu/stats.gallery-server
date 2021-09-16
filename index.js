@@ -4,6 +4,8 @@ const cors = require('@koa/cors');
 const { createPool, sql } = require('slonik');
 const routes = require('./routes');
 const poll = require('./poll');
+const { sleep } = require('./utils/sleep');
+const { LeaderboardCache } = require('./leaderboards');
 
 const app = new Koa();
 const port = process.env['PORT'] || 3000;
@@ -18,8 +20,14 @@ const endpoints = process.env['ENDPOINT'].split(',').map((s) => s.trim());
 const connections = process.env['DB_CONNECTION']
   .split(',')
   .map((s) => s.trim());
+const leaderboardCacheConnectionString = process.env['CACHE_DB_CONNECTION'];
 /** @type {import('slonik').DatabasePoolType[]} */
 const pools = [];
+
+const leaderboardCache = new LeaderboardCache(
+  leaderboardCacheConnectionString,
+  connections[endpoints.indexOf('mainnet')],
+);
 
 if (endpoints.length === 0 || endpoints.length !== connections.length) {
   console.error('Invalid endpoint/connection configuration provided');
@@ -78,6 +86,16 @@ endpoints.forEach((endpoint, i) => {
     }
   });
 
+  router.get('/leaderboard-balance', async (ctx, next) => {
+    ctx.body = await leaderboardCache.getTopAccountsByBalance();
+    await next();
+  });
+
+  router.get('/leaderboard-score', async (ctx, next) => {
+    ctx.body = await leaderboardCache.getTopAccountsByScore();
+    await next();
+  });
+
   process.on('exit', async () => {
     console.log('Ending pool ' + endpoint + '...');
     await pool.end();
@@ -121,6 +139,24 @@ index.get('/card/:accountId/card.png', async (ctx, next) => {
   }
   await next();
 });
+
+async function recurringUpdateLeaderboards() {
+  let b = false;
+  process.on('exit', () => {
+    // best we can do
+    b = true;
+  });
+
+  while (true) {
+    if (b) {
+      break;
+    }
+    await leaderboardCache.update();
+    await sleep(1000 * 60 * 10); // 10 minutes
+  }
+}
+
+recurringUpdateLeaderboards();
 
 app.use(index.routes()).use(index.allowedMethods());
 
