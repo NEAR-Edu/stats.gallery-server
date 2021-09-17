@@ -22,6 +22,9 @@ const topAccountsSql = require('./queries/top-accounts.sql');
 const totalReceivedSql = require('./queries/total-received.sql');
 const totalSentSql = require('./queries/total-sent.sql');
 
+const leaderboardBalanceSql = require('./queries/cache/leaderboard-balance.sql');
+const leaderboardScoreSql = require('./queries/cache/leaderboard-score.sql');
+
 const SECOND = 1000,
   MINUTE = 60 * SECOND,
   HOUR = 60 * MINUTE,
@@ -124,5 +127,19 @@ module.exports = [
   {
     path: 'total-sent',
     query: totalSentSql,
+  },
+
+  // Leaderboards
+  {
+    path: 'leaderboard-balance',
+    query: leaderboardBalanceSql,
+    cache: true,
+    poll: 1 * HOUR,
+  },
+  {
+    path: 'leaderboard-score',
+    query: leaderboardScoreSql,
+    cache: true,
+    poll: 1 * HOUR,
   },
 ];

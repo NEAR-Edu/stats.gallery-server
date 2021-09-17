@@ -4,11 +4,9 @@ const scoreSql = require('./queries/score.sql');
 
 class LeaderboardCache {
   constructor(cachePoolConnectionString, indexerPoolConnectionString) {
-    // this.cachePool = createPool('postgres://postgres@127.0.0.1/test_cache');
     this.cachePool = createPool(cachePoolConnectionString);
 
     this.indexerPool = createPool(
-      // 'postgres://public_readonly:nearprotocol@104.199.89.51/mainnet_explorer',
       indexerPoolConnectionString,
     );
 
@@ -259,38 +257,10 @@ class LeaderboardCache {
     console.log('Updates to new/stale accounts', accountsToUpdate.length);
 
     console.log('Querying & writing balances...');
-    const balances = await this.queryBalancesFromIndexerAndUpdate(
+    await this.queryBalancesFromIndexerAndUpdate(
       accountsWithNull.concat(accountsToUpdate),
     );
     console.log('Done querying & writing balances');
-  }
-
-  getTopAccountsByBalance() {
-    return this.cachePool.many(sql`
-      select account_id, balance::text, score
-      from account
-      where balance is not null and score is not null
-        and account_id not like '%.lockup.near'
-        and account_id not like '%.poolv1.near'
-        and account_id not like 'nfeco__.near'
-        and account_id not like 'nfendowment__.near'
-      order by account.balance desc
-      limit 20
-    `);
-  }
-
-  getTopAccountsByScore() {
-    return this.cachePool.many(sql`
-      select account_id, balance::text, score
-      from account
-      where balance is not null and score is not null
-        and account_id not like '%.lockup.near'
-        and account_id not like '%.poolv1.near'
-        and account_id not like 'nfeco__.near'
-        and account_id not like 'nfendowment__.near'
-      order by account.score desc
-      limit 20
-    `);
   }
 }
 

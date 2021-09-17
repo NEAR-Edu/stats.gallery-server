@@ -44,9 +44,11 @@ endpoints.forEach((endpoint, i) => {
   pools.push(pool);
 
   routes.forEach((route) => {
+    const routePool = route.cache ? leaderboardCache.cachePool : pool;
+
     if ('poll' in route) {
       const fn = async () =>
-        await pool.connect((connection) => {
+        await routePool.connect((connection) => {
           return connection.any(route.query());
         });
       const { call } = poll(fn, {
@@ -72,7 +74,7 @@ endpoints.forEach((endpoint, i) => {
         console.log('/' + route.path);
         console.log('Request', ctx.request);
         try {
-          const result = await pool.connect((connection) => {
+          const result = await routePool.connect((connection) => {
             return connection.any(route.query(ctx.query));
           });
           console.log('Response', result);
@@ -84,16 +86,6 @@ endpoints.forEach((endpoint, i) => {
         }
       });
     }
-  });
-
-  router.get('/leaderboard-balance', async (ctx, next) => {
-    ctx.body = await leaderboardCache.getTopAccountsByBalance();
-    await next();
-  });
-
-  router.get('/leaderboard-score', async (ctx, next) => {
-    ctx.body = await leaderboardCache.getTopAccountsByScore();
-    await next();
   });
 
   process.on('exit', async () => {
