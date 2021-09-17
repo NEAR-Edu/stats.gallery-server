@@ -39,6 +39,7 @@ module.exports = [
     path: 'account-activity-distribution',
     query: accountActivityDistributionSql,
     poll: 3 * DAY,
+    cache: true,
   },
   {
     path: 'account-creation',
