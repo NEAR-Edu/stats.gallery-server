@@ -147,6 +147,8 @@ async function recurringUpdateLeaderboards() {
     b = true;
   });
 
+  console.log('updating cache');
+
   while (true) {
     if (b) {
       break;
@@ -156,7 +158,10 @@ async function recurringUpdateLeaderboards() {
   }
 }
 
-recurringUpdateLeaderboards();
+const noUpdateCache = process.env['NO_UPDATE_CACHE'];
+if (!noUpdateCache) {
+  recurringUpdateLeaderboards();
+}
 
 app.use(index.routes()).use(index.allowedMethods());
 
