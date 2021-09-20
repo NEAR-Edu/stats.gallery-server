@@ -94,6 +94,7 @@ module.exports = [
     path: 'new-accounts-count',
     query: newAccountsCountSql,
     poll: HOUR,
+    cache: true,
   },
   {
     path: 'new-accounts-list',
