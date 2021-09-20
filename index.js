@@ -47,10 +47,7 @@ endpoints.forEach((endpoint, i) => {
     const routePool = route.cache ? leaderboardCache.cachePool : pool;
 
     if ('poll' in route) {
-      const fn = async () =>
-        await routePool.connect((connection) => {
-          return connection.any(route.query());
-        });
+      const fn = () => routePool.any(route.query());
       const { call } = poll(fn, {
         updateInterval: route.poll,
         defaultValue: [],
@@ -74,9 +71,7 @@ endpoints.forEach((endpoint, i) => {
         console.log('/' + route.path);
         console.log('Request', ctx.request);
         try {
-          const result = await routePool.connect((connection) => {
-            return connection.any(route.query(ctx.query));
-          });
+          const result = await routePool.any(route.query(ctx.query));
           console.log('Response', result);
 
           ctx.response.body = result;
