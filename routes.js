@@ -39,7 +39,7 @@ module.exports = [
     path: 'account-activity-distribution',
     query: accountActivityDistributionSql,
     poll: 3 * DAY,
-    cache: true,
+    db: 'cache',
   },
   {
     path: 'account-creation',
@@ -94,12 +94,13 @@ module.exports = [
     path: 'new-accounts-count',
     query: newAccountsCountSql,
     poll: HOUR,
-    cache: true,
+    db: 'cache',
   },
   {
     path: 'new-accounts-list',
     query: newAccountsListSql,
     poll: 10 * MINUTE,
+    db: 'cache',
   },
   {
     path: 'received-transaction-count',
@@ -135,13 +136,13 @@ module.exports = [
   {
     path: 'leaderboard-balance',
     query: leaderboardBalanceSql,
-    cache: true,
+    db: 'cache',
     poll: 1 * HOUR,
   },
   {
     path: 'leaderboard-score',
     query: leaderboardScoreSql,
-    cache: true,
+    db: 'cache',
     poll: 1 * HOUR,
   },
 ];

@@ -44,7 +44,7 @@ endpoints.forEach((endpoint, i) => {
   pools.push(pool);
 
   routes.forEach((route) => {
-    const routePool = route.cache ? leaderboardCache.cachePool : pool;
+    const routePool = route.db === 'cache' ? leaderboardCache.cachePool : pool;
 
     if ('poll' in route) {
       const fn = () => routePool.any(route.query());
