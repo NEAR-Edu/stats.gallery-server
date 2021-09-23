@@ -1,20 +1,14 @@
 const { createCanvas, loadImage, registerFont } = require('canvas');
-const { createPool } = require('slonik');
 const clipString = require('./utils/clipString');
 const badgeDeploySql = require('./queries/badge-deploy.sql');
 const badgeNftSql = require('./queries/badge-nft.sql');
 const badgeStakeSql = require('./queries/badge-stake.sql');
 const badgeTransferSql = require('./queries/badge-transfer.sql');
-const scoreSql = require('./queries/score.sql');
+const scoreSql = require('./queries/score-from-cache.sql');
 const { currentLevel } = require('./utils/level');
 const { humanizeLevel } = require('./utils/humanize');
 
 require('dotenv').config();
-
-const endpoints = process.env['ENDPOINT'].split(',').map((s) => s.trim());
-const connections = process.env['DB_CONNECTION']
-  .split(',')
-  .map((s) => s.trim());
 
 registerFont(__dirname + '/fonts/DMSans-Regular.ttf', {
   family: 'DM Sans',
@@ -101,18 +95,14 @@ const badges = [
   },
 ];
 
-async function draw(accountName, network) {
-  if (!endpoints.includes(network)) {
-    return;
-  }
-
+async function draw(accountName, pool, cachePool) {
   const width = 1200;
   const height = 600;
   const canvas = createCanvas(width, height);
   const ctx = canvas.getContext('2d');
 
-  const pool = createPool(connections[endpoints.indexOf(network)]);
-  const scorePromise = pool.one(scoreSql({ account_id: accountName }));
+  const scorePromise = cachePool.one(scoreSql({ account_id: accountName }));
+
   const hasPromise = Promise.all(
     badges.map(async (badge) => {
       const { result } = await pool.one(
@@ -217,8 +207,6 @@ async function draw(accountName, network) {
     logoWidth,
     logoHeight,
   );
-
-  pool.end();
 
   return canvas;
 }

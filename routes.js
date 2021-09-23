@@ -16,7 +16,7 @@ const newAccountsCountSql = require('./queries/new-accounts-count.sql');
 const newAccountsListSql = require('./queries/new-accounts-list.sql');
 const receivedTransactionCountSql = require('./queries/received-transaction-count.sql');
 const recentTransactionActionsSql = require('./queries/recent-transaction-actions.sql');
-const scoreSql = require('./queries/score.sql');
+const scoreSql = require('./queries/score-from-cache.sql');
 const sentTransactionCountSql = require('./queries/sent-transaction-count.sql');
 const topAccountsSql = require('./queries/top-accounts.sql');
 const totalReceivedSql = require('./queries/total-received.sql');
@@ -113,6 +113,7 @@ module.exports = [
   {
     path: 'score',
     query: scoreSql,
+    db: 'cache',
   },
   {
     path: 'sent-transaction-count',

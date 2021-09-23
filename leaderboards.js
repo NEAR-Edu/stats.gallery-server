@@ -1,7 +1,7 @@
 const fs = require('fs/promises');
 const { createPool, sql } = require('slonik');
 const accountCreationSql = require('./queries/account-creation.sql');
-const scoreSql = require('./queries/score.sql');
+const scoreSql = require('./queries/score-calculate.sql');
 
 class LeaderboardCache {
   constructor(cachePoolConnectionString, indexerPoolConnectionString) {
