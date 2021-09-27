@@ -54,7 +54,6 @@ endpoints.forEach((endpoint, i) => {
       });
 
       router.get('/' + route.path, async (ctx, next) => {
-        console.log('/' + route.path);
         console.log('Request', ctx.request.url);
         try {
           const result = await call();
@@ -68,7 +67,6 @@ endpoints.forEach((endpoint, i) => {
       });
     } else {
       router.get('/' + route.path, async (ctx, next) => {
-        console.log('/' + route.path);
         console.log('Request', ctx.request.url);
         try {
           const result = await routePool.any(route.query(ctx.query));
