@@ -6,7 +6,7 @@
   "scripts": {
     "start": "node -r dotenv/config ./index.js"
   },
-  "author": "Jacob Lindahl <jacob@near.org>",
+  "author": "Jacob Lindahl <jacob@near.foundation>",
   "license": "GPL-3.0-only",
   "dependencies": {
     "@koa/cors": "^3.1.0",
@@ -15,5 +15,9 @@
     "dotenv": "^10.0.0",
     "koa": "^2.13.1",
     "slonik": "^23.8.0"
+  },
+  "devDependencies": {
+    "db-migrate": "^1.0.0-beta.16",
+    "db-migrate-pg": "^1.2.2"
   }
 }
