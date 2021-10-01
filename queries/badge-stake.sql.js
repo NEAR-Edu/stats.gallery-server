@@ -7,7 +7,9 @@ module.exports = params => {
       select *
       from transactions
       where signer_account_id = ${params.account_id}
-        and receiver_account_id like '%.poolv1.near'
+        and
+          (receiver_account_id like '%.poolv1.near'
+          or receiver_account_id like 'meta-pool.near')
     )
   `;
 };
