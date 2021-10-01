@@ -1,7 +1,9 @@
 const fs = require('fs/promises');
 const { createPool, sql } = require('slonik');
+const { currentLevel } = require('./utils/level');
 const accountCreationSql = require('./queries/account-creation.sql');
 const scoreSql = require('./queries/score-calculate.sql');
+const stakeSql = require('./queries/badge-stake.sql');
 
 class LeaderboardCache {
   constructor(cachePoolConnectionString, indexerPoolConnectionString) {
@@ -66,10 +68,15 @@ class LeaderboardCache {
   }
 
   /** @type {() => Promise<number>} */
-  queryLastUpdateBlockHeightFromCache() {
-    return this.cachePool.oneFirst(sql`
-      select block_height from last_update
-    `);
+  async queryLastUpdateBlockHeightFromCache() {
+    try {
+      const res = await this.cachePool.oneFirst(sql`
+        select block_height from last_update
+      `);
+      return res;
+    } catch (err) {
+      return 0;
+    }
   }
 
   writeAccountIds(accounts) {
@@ -143,6 +150,10 @@ class LeaderboardCache {
     return await this.indexerPool.oneFirst(scoreSql({ account_id: account }));
   }
 
+  async getAccountStake(account) {
+    return await this.indexerPool.oneFirst(stakeSql({ account_id: account }));
+  }
+
   async getAccountBalance(account) {
     return await this.indexerPool.oneFirst(sql`
       select t_a.affected_account_nonstaked_balance as balance
@@ -155,19 +166,27 @@ class LeaderboardCache {
     `);
   }
 
-  getAccountCreated(account) {
-    return this.indexerPool.oneFirst(
-      accountCreationSql({ account_id: account }),
-    );
+  async getAccountCreated(account) {
+    try {
+      const created = await this.indexerPool.oneFirst(
+        accountCreationSql({ account_id: account }),
+      );
+      return created;
+    } catch (err) {
+      if (err instanceof Error && err.name === 'NotFoundError') {
+        return null;
+      }
+      throw err;
+    }
   }
 
-  async queryAndUpdate(accounts, queryFn, updateFn) {
+  async queryAndUpdate(name, accounts, queryFn, updateFn) {
     const maxSimultaneousRequests = 10;
 
     let group = [];
     for (let i = 0; i < accounts.length; i++) {
       if (i > 0 && i % 1000 === 0) {
-        console.log('Leaderboard cache update', i);
+        console.log(`${name} cache update: ${i} / ${accounts.length} (${(i * 100 / accounts.length).toFixed(2)}%)`);
       }
 
       if (group.length >= maxSimultaneousRequests) {
@@ -181,7 +200,7 @@ class LeaderboardCache {
               // console.log('Updated ', account);
             } catch (e) {
               // oh well
-              console.log('Unable to query and update ', account, e);
+              console.log(`Query ${name} ${i} failed on account ${account}, ${e}`);
             }
           }),
         );
@@ -261,7 +280,7 @@ class LeaderboardCache {
   queryAccountsWithNullScoreFromCache() {
     return this.cachePool.manyFirst(sql`
       select account_id from account
-        where score is null
+        where score is null or level is null
     `);
   }
 
@@ -284,15 +303,25 @@ class LeaderboardCache {
   writeScore(account, score) {
     return this.cachePool.query(sql`
       update account
-        set score = ${score}
+        set score = ${score},
+          level = ${currentLevel(score).level}
         where account_id = ${account}
     `);
   }
 
   writeCreated(account, created) {
+    if (created == null) return;
     return this.cachePool.query(sql`
       update account
         set created_at_block_timestamp = ${created}
+        where account_id = ${account}
+    `);
+  }
+
+  writeStake(account, stake) {
+    return this.cachePool.query(sql`
+      update account
+        set stake = ${stake ? 'TRUE' : 'FALSE'}
         where account_id = ${account}
     `);
   }
@@ -301,7 +330,8 @@ class LeaderboardCache {
     return this.cachePool.query(sql`
       update account
         set score = ${score},
-          balance = ${balance}
+          balance = ${balance},
+          level = ${currentLevel(score).level}
         where account_id = ${account}
     `);
   }
@@ -339,19 +369,28 @@ class LeaderboardCache {
 
     await Promise.all([
       this.queryAndUpdate(
+        'Balance',
         updateBalanceAccounts.concat(accountsToUpdate),
         (account) => this.getAccountBalance(account),
         (account, value) => this.writeBalance(account, value),
       ),
       this.queryAndUpdate(
+        'Score  ',
         updateScoreAccounts.concat(accountsToUpdate),
         (account) => this.getAccountScore(account),
         (account, value) => this.writeScore(account, value),
       ),
       this.queryAndUpdate(
+        'Created',
         updateCreatedAccounts.concat(accountsToUpdate),
         (account) => this.getAccountCreated(account),
         (account, value) => this.writeCreated(account, value),
+      ),
+      this.queryAndUpdate(
+        'Stake  ',
+        updateScoreAccounts.concat(accountsToUpdate),
+        async (account) => this.getAccountStake(account),
+        (account, value) => this.writeStake(account, value),
       ),
     ]);
 

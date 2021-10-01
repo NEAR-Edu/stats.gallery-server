@@ -1,0 +1,2 @@
+ALTER TABLE account
+REMOVE COLUMN stake;
