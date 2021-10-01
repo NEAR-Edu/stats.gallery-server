@@ -13,15 +13,13 @@ module.exports = params => {
       end
     ), 0) as result from
       (select action_kind, signer_account_id, tx.receiver_account_id from
-        (select *
+        (select signer_account_id, receiver_account_id, transaction_hash, converted_into_receipt_id
           from transactions
           where (transactions.signer_account_id = ${params.account_id}
           or transactions.receiver_account_id = ${params.account_id})
-          order by block_timestamp desc
         ) tx
         inner join receipts on tx.converted_into_receipt_id = receipts.receipt_id
         left outer join transaction_actions on tx.transaction_hash = transaction_actions.transaction_hash
-        where signer_account_id = ${params.account_id} or tx.receiver_account_id = ${params.account_id}
-      ) a    
+      ) a
   `;
 };
