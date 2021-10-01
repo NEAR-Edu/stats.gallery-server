@@ -1,7 +1,31 @@
 const { sql } = require('slonik');
 
 module.exports = params => {
-  let query = sql`select *, balance::text from account`;
+  let query;
+  if (params.select) {
+    const selectParams = {
+      '*': sql`*`,
+      account_id: sql`account_id`,
+      balance: sql`balance::text`,
+      score: sql`score`,
+      created_at_block_timestamp: sql`created_at_block_timestamp`,
+      stake: sql`stake`,
+      level: sql`level`,
+    };
+    let selectQuery = [];
+    for (const s of params.select.split(',')) {
+      const query = selectParams[s];
+      if (!query) continue;
+      selectQuery.push(query);
+    }
+    if (selectQuery.length === 0) {
+      query = sql`select *, balance::text from account`;
+    } else {
+      query = sql`select ${sql.join(selectQuery, sql`, `)} from account`;
+    }
+  } else {
+    query = sql`select *, balance::text from account`;
+  }
   if (params.account_id != null) {
     query = sql`${query} where account_id = ${params.account_id}`;
   } else {
