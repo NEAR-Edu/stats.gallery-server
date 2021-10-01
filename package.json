@@ -4,7 +4,9 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "start": "node -r dotenv/config ./index.js"
+    "start": "node -r dotenv/config ./index.js",
+    "start:prod": "node -r dotenv/config dist",
+    "build": "esbuild index.js --platform=node --bundle --outfile=dist/index.js --target=node14 --external:canvas --external:pg"
   },
   "author": "Jacob Lindahl <jacob@near.foundation>",
   "license": "GPL-3.0-only",
@@ -18,6 +20,7 @@
   },
   "devDependencies": {
     "db-migrate": "^1.0.0-beta.16",
-    "db-migrate-pg": "^1.2.2"
+    "db-migrate-pg": "^1.2.2",
+    "esbuild": "^0.13.3"
   }
 }
