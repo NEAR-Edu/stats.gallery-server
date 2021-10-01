@@ -61,10 +61,16 @@ class LeaderboardCache {
 
   /** @typedef {{ account_id: string; balance: string; score: number; }} AccountRecord */
   /** @type {() => Promise<AccountRecord[]>} */
-  queryAllAccountsFromCache() {
-    return this.cachePool.many(sql`
-      select * from account
-    `);
+  async queryAllAccountsFromCache() {
+    try {
+      const res = await this.cachePool.many(sql`
+        select * from account
+      `);
+      return res;
+    } catch (err) {
+      // not yet initialized
+      return [];
+    }
   }
 
   /** @type {() => Promise<number>} */
