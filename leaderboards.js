@@ -1,6 +1,7 @@
 const fs = require('fs/promises');
 const { createPool, sql } = require('slonik');
 const { currentLevel } = require('./utils/level');
+const { sleep } = require('./utils/sleep');
 const accountCreationSql = require('./queries/account-creation.sql');
 const scoreSql = require('./queries/score-calculate.sql');
 const stakeSql = require('./queries/badge-stake.sql');
@@ -199,15 +200,23 @@ class LeaderboardCache {
         // console.log('group', i / maxSimultaneousRequests);
 
         await Promise.all(
-          group.map(async (account) => {
-            try {
-              const value = await queryFn(account);
-              await updateFn(account, value);
-              // console.log('Updated ', account);
-            } catch (e) {
-              // oh well
-              console.log(`Query ${name} ${i} failed on account ${account}, ${e}`);
+          group.map(async (account, j) => {
+            let remainingRetries = 3;
+            let err;
+            while (remainingRetries > 0) {
+              try {
+                const value = await queryFn(account);
+                await updateFn(account, value);
+                // console.log('Updated ', account);
+                return;
+              } catch (e) {
+                // oh well
+                err = e;
+                remainingRetries--;
+                await sleep(2000);
+              }
             }
+            console.log(`Query ${name} ${i + j} failed on account ${account}, ${err}`);
           }),
         );
 
