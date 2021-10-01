@@ -1,15 +1,18 @@
 const { sql } = require('slonik');
 
 module.exports = params => {
-  let query = sql`
-    select *, balance::text
-    from account
-    where balance is not null and score is not null
+  let query = sql`select *, balance::text from account`;
+  if (params.account_id != null) {
+    query = sql`${query} where account_id = ${params.account_id}`;
+  } else {
+    query = sql`${query}
+      where balance is not null and score is not null
       and account_id not like '%.lockup.near'
       and account_id not like '%.poolv1.near'
       and account_id not like 'nfeco__.near'
       and account_id not like 'nfendowment__.near'
-  `;
+    `;
+  }
   if (params.stake != null) {
     query = sql`${query} and stake is ${params.stake === '1' ? sql`true` : sql`false`}`;
   }
