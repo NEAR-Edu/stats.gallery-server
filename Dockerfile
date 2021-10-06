@@ -13,7 +13,7 @@ RUN npm init -y
 RUN npm install dotenv canvas pg
 
 COPY --from=build dist .
-COPY .env .
+COPY .env* .
 COPY fonts fonts
 
 EXPOSE 3000
