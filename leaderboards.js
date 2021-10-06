@@ -1,10 +1,8 @@
 const fs = require('fs/promises');
 const { createPool, sql } = require('slonik');
-const { currentLevel } = require('./utils/level');
 const { sleep } = require('./utils/sleep');
 const accountCreationSql = require('./queries/account-creation.sql');
 const scoreSql = require('./queries/score-calculate.sql');
-const stakeSql = require('./queries/badge-stake.sql');
 
 class LeaderboardCache {
   constructor(cachePoolConnectionString, indexerPoolConnectionString) {
@@ -157,10 +155,6 @@ class LeaderboardCache {
     return await this.indexerPool.oneFirst(scoreSql({ account_id: account }));
   }
 
-  async getAccountStake(account) {
-    return await this.indexerPool.oneFirst(stakeSql({ account_id: account }));
-  }
-
   async getAccountBalance(account) {
     return await this.indexerPool.oneFirst(sql`
       select t_a.affected_account_nonstaked_balance as balance
@@ -193,7 +187,12 @@ class LeaderboardCache {
     let group = [];
     for (let i = 0; i < accounts.length; i++) {
       if (i > 0 && i % 1000 === 0) {
-        console.log(`${name} cache update: ${i} / ${accounts.length} (${(i * 100 / accounts.length).toFixed(2)}%)`);
+        console.log(
+          `${name} cache update: ${i} / ${accounts.length} (${(
+            (i * 100) /
+            accounts.length
+          ).toFixed(2)}%)`,
+        );
       }
 
       if (group.length >= maxSimultaneousRequests) {
@@ -216,7 +215,9 @@ class LeaderboardCache {
                 await sleep(2000);
               }
             }
-            console.log(`Query ${name} ${i + j} failed on account ${account}, ${err}`);
+            console.log(
+              `Query ${name} ${i + j} failed on account ${account}, ${err}`,
+            );
           }),
         );
 
@@ -295,7 +296,7 @@ class LeaderboardCache {
   queryAccountsWithNullScoreFromCache() {
     return this.cachePool.manyFirst(sql`
       select account_id from account
-        where score is null or level is null
+        where score is null
     `);
   }
 
@@ -318,8 +319,7 @@ class LeaderboardCache {
   writeScore(account, score) {
     return this.cachePool.query(sql`
       update account
-        set score = ${score},
-          level = ${currentLevel(score).level}
+        set score = ${score}
         where account_id = ${account}
     `);
   }
@@ -333,20 +333,11 @@ class LeaderboardCache {
     `);
   }
 
-  writeStake(account, stake) {
-    return this.cachePool.query(sql`
-      update account
-        set stake = ${stake ? 'TRUE' : 'FALSE'}
-        where account_id = ${account}
-    `);
-  }
-
   writeBalanceAndScore(account, balance, score) {
     return this.cachePool.query(sql`
       update account
         set score = ${score},
-          balance = ${balance},
-          level = ${currentLevel(score).level}
+          balance = ${balance}
         where account_id = ${account}
     `);
   }
@@ -390,7 +381,7 @@ class LeaderboardCache {
         (account, value) => this.writeBalance(account, value),
       ),
       this.queryAndUpdate(
-        'Score  ',
+        'Score',
         updateScoreAccounts.concat(accountsToUpdate),
         (account) => this.getAccountScore(account),
         (account, value) => this.writeScore(account, value),
@@ -400,12 +391,6 @@ class LeaderboardCache {
         updateCreatedAccounts.concat(accountsToUpdate),
         (account) => this.getAccountCreated(account),
         (account, value) => this.writeCreated(account, value),
-      ),
-      this.queryAndUpdate(
-        'Stake  ',
-        updateScoreAccounts.concat(accountsToUpdate),
-        async (account) => this.getAccountStake(account),
-        (account, value) => this.writeStake(account, value),
       ),
     ]);
 

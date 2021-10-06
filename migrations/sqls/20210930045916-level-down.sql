@@ -1,2 +1,0 @@
-ALTER TABLE account
-REMOVE COLUMN level;

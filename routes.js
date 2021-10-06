@@ -25,7 +25,6 @@ const totalSentSql = require('./queries/total-sent.sql');
 
 const leaderboardBalanceSql = require('./queries/cache/leaderboard-balance.sql');
 const leaderboardScoreSql = require('./queries/cache/leaderboard-score.sql');
-const scoreQuerySql = require('./queries/cache/score-query.sql');
 
 const SECOND = 1000,
   MINUTE = 60 * SECOND,
@@ -151,10 +150,5 @@ module.exports = [
     query: leaderboardScoreSql,
     db: 'cache',
     poll: 1 * HOUR,
-  },
-  {
-    path: 'score-query',
-    query: scoreQuerySql,
-    db: 'cache',
   },
 ];

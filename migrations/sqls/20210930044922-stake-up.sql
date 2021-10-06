@@ -1,2 +1,0 @@
-ALTER TABLE account
-ADD COLUMN stake BOOLEAN;
