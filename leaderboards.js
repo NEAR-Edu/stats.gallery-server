@@ -1,5 +1,6 @@
 const fs = require('fs/promises');
 const { createPool, sql } = require('slonik');
+const { sleep } = require('./utils/sleep');
 const accountCreationSql = require('./queries/account-creation.sql');
 const scoreSql = require('./queries/score-calculate.sql');
 
@@ -59,17 +60,28 @@ class LeaderboardCache {
 
   /** @typedef {{ account_id: string; balance: string; score: number; }} AccountRecord */
   /** @type {() => Promise<AccountRecord[]>} */
-  queryAllAccountsFromCache() {
-    return this.cachePool.many(sql`
-      select * from account
-    `);
+  async queryAllAccountsFromCache() {
+    try {
+      const res = await this.cachePool.many(sql`
+        select * from account
+      `);
+      return res;
+    } catch (err) {
+      // not yet initialized
+      return [];
+    }
   }
 
   /** @type {() => Promise<number>} */
-  queryLastUpdateBlockHeightFromCache() {
-    return this.cachePool.oneFirst(sql`
-      select block_height from last_update
-    `);
+  async queryLastUpdateBlockHeightFromCache() {
+    try {
+      const res = await this.cachePool.oneFirst(sql`
+        select block_height from last_update
+      `);
+      return res;
+    } catch (err) {
+      return 0;
+    }
   }
 
   writeAccountIds(accounts) {
@@ -155,34 +167,57 @@ class LeaderboardCache {
     `);
   }
 
-  getAccountCreated(account) {
-    return this.indexerPool.oneFirst(
-      accountCreationSql({ account_id: account }),
-    );
+  async getAccountCreated(account) {
+    try {
+      const created = await this.indexerPool.oneFirst(
+        accountCreationSql({ account_id: account }),
+      );
+      return created;
+    } catch (err) {
+      if (err instanceof Error && err.name === 'NotFoundError') {
+        return null;
+      }
+      throw err;
+    }
   }
 
-  async queryAndUpdate(accounts, queryFn, updateFn) {
+  async queryAndUpdate(name, accounts, queryFn, updateFn) {
     const maxSimultaneousRequests = 10;
 
     let group = [];
     for (let i = 0; i < accounts.length; i++) {
       if (i > 0 && i % 1000 === 0) {
-        console.log('Leaderboard cache update', i);
+        console.log(
+          `${name} cache update: ${i} / ${accounts.length} (${(
+            (i * 100) /
+            accounts.length
+          ).toFixed(2)}%)`,
+        );
       }
 
       if (group.length >= maxSimultaneousRequests) {
         // console.log('group', i / maxSimultaneousRequests);
 
         await Promise.all(
-          group.map(async (account) => {
-            try {
-              const value = await queryFn(account);
-              await updateFn(account, value);
-              // console.log('Updated ', account);
-            } catch (e) {
-              // oh well
-              console.log('Unable to query and update ', account, e);
+          group.map(async (account, j) => {
+            let remainingRetries = 3;
+            let err;
+            while (remainingRetries > 0) {
+              try {
+                const value = await queryFn(account);
+                await updateFn(account, value);
+                // console.log('Updated ', account);
+                return;
+              } catch (e) {
+                // oh well
+                err = e;
+                remainingRetries--;
+                await sleep(2000);
+              }
             }
+            console.log(
+              `Query ${name} ${i + j} failed on account ${account}, ${err}`,
+            );
           }),
         );
 
@@ -290,6 +325,7 @@ class LeaderboardCache {
   }
 
   writeCreated(account, created) {
+    if (created == null) return;
     return this.cachePool.query(sql`
       update account
         set created_at_block_timestamp = ${created}
@@ -339,16 +375,19 @@ class LeaderboardCache {
 
     await Promise.all([
       this.queryAndUpdate(
+        'Balance',
         updateBalanceAccounts.concat(accountsToUpdate),
         (account) => this.getAccountBalance(account),
         (account, value) => this.writeBalance(account, value),
       ),
       this.queryAndUpdate(
+        'Score',
         updateScoreAccounts.concat(accountsToUpdate),
         (account) => this.getAccountScore(account),
         (account, value) => this.writeScore(account, value),
       ),
       this.queryAndUpdate(
+        'Created',
         updateCreatedAccounts.concat(accountsToUpdate),
         (account) => this.getAccountCreated(account),
         (account, value) => this.writeCreated(account, value),
