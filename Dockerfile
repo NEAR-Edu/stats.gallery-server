@@ -1,20 +1,15 @@
-FROM node:14-bullseye-slim as build
-
-COPY . .
-
-RUN npm install
-RUN npm run build
-
-FROM node:14-bullseye-slim
+FROM node:14-bullseye
 
 WORKDIR /usr/src/app
 
-RUN npm init -y
-RUN npm install dotenv canvas pg
+RUN apt-get update || : && apt-get install python3 -y
 
-COPY --from=build dist .
-COPY .env* .
-COPY fonts fonts
+COPY package*.json ./
+
+RUN npm ci --only=production
+
+# Bundle app source
+COPY . .
 
 EXPOSE 3000
-CMD [ "node", "-r", "dotenv/config", "." ]
+CMD [ "npm", "run", "start" ]
