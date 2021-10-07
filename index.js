@@ -5,6 +5,7 @@ const { createPool, sql } = require('slonik');
 const routes = require('./routes');
 const poll = require('./poll');
 const { sleep } = require('./utils/sleep');
+const { retry } = require('./utils/retry');
 const { LeaderboardCache } = require('./leaderboards');
 
 const app = new Koa();
@@ -40,7 +41,9 @@ endpoints.forEach((endpoint, i) => {
 
   console.log('Connection', connection);
 
-  const pool = createPool(connection);
+  const pool = createPool(connection, {
+    maximumPoolSize: 31,
+  });
   pools.push(pool);
 
   routes.forEach((route) => {
@@ -69,7 +72,8 @@ endpoints.forEach((endpoint, i) => {
       router.get('/' + route.path, async (ctx, next) => {
         console.log('Request', ctx.request.url);
         try {
-          const result = await routePool.any(route.query(ctx.query));
+          // const result = await routePool.any(route.query(ctx.query));
+          const result = await retry(() => routePool.any(route.query(ctx.query)));
           // console.log('Response', result);
 
           ctx.response.body = result;
