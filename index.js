@@ -136,7 +136,7 @@ async function recurringUpdateLeaderboards() {
     b = true;
   });
 
-  console.log('updating cache');
+  console.log('Updating cache');
 
   while (true) {
     if (b) {
