@@ -1,18 +1,32 @@
 const fs = require('fs/promises');
-const { createPool, sql } = require('slonik');
-const { sleep } = require('./utils/sleep');
-const accountCreationSql = require('./queries/account-creation.sql');
-const scoreSql = require('./queries/score-calculate.sql');
+const { sql } = require('slonik');
+const { sleep } = require('../utils/sleep');
+const accountCreationSql = require('../queries/account-creation.sql');
+const scoreSql = require('../queries/score-calculate.sql');
 
 class LeaderboardCache {
-  constructor(cachePoolConnectionString, indexerPoolConnectionString) {
-    this.cachePool = createPool(cachePoolConnectionString);
+  constructor(statsGalleryCachePool, indexerCachePool, environment) {
+    this.cachePool = statsGalleryCachePool;
 
-    this.indexerPool = createPool(indexerPoolConnectionString);
+    this.indexerPool = indexerCachePool;
+
+    this.environmentVar = environment;
 
     process.on('exit', async () => {
       await Promise.all([this.indexerPool.end(), this.cachePool.end()]);
     });
+  }
+
+  isEnabled() {
+    return this.environmentVar['NO_UPDATE_CACHE'];
+  }
+
+  cronName() {
+    return 'LEADERBOARDCACHE';
+  }
+
+  schedule() {
+    return '*/10 * * * *';  // every 10 minutes
   }
 
   async queryUpdatedAccountsFromIndexer(sinceBlockHeight) {
@@ -348,7 +362,7 @@ class LeaderboardCache {
     }
   }
 
-  async update() {
+  async run() {
     console.log('Loading accounts...');
     const { cachedAccounts, accountsToUpdate, lastUpdateBlockHeight } =
       await this.loadAccounts();

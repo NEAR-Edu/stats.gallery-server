@@ -4,9 +4,9 @@ const cors = require('@koa/cors');
 const { createPool, sql } = require('slonik');
 const routes = require('./routes');
 const poll = require('./poll');
-const { sleep } = require('./utils/sleep');
 const { retry } = require('./utils/retry');
-const { LeaderboardCache } = require('./leaderboards');
+const Crons = require('./crons');
+const nodeCron = require('node-cron');
 
 const app = new Koa();
 const port = process.env['PORT'] || 3000;
@@ -21,14 +21,12 @@ const endpoints = process.env['ENDPOINT'].split(',').map((s) => s.trim());
 const connections = process.env['DB_CONNECTION']
   .split(',')
   .map((s) => s.trim());
-const leaderboardCacheConnectionString = process.env['CACHE_DB_CONNECTION'];
 /** @type {import('slonik').DatabasePoolType[]} */
 const pools = [];
+const databaseCachePool = createPool(process.env['CACHE_DB_CONNECTION']);
+const indexerDatabaseString = connections[endpoints.indexOf('mainnet')];
+const indexerCachePool = createPool(indexerDatabaseString);
 
-const leaderboardCache = new LeaderboardCache(
-  leaderboardCacheConnectionString,
-  connections[endpoints.indexOf('mainnet')],
-);
 
 if (endpoints.length === 0 || endpoints.length !== connections.length) {
   console.error('Invalid endpoint/connection configuration provided');
@@ -47,7 +45,7 @@ endpoints.forEach((endpoint, i) => {
   pools.push(pool);
 
   routes.forEach((route) => {
-    const routePool = route.db === 'cache' ? leaderboardCache.cachePool : pool;
+    const routePool = route.db === 'cache' ? databaseCachePool : pool;
 
     if ('poll' in route) {
       const fn = () => routePool.any(route.query());
@@ -129,28 +127,23 @@ index.get('/card/:accountId/card.png', async (ctx, next) => {
   await next();
 });
 
-async function recurringUpdateLeaderboards() {
-  let b = false;
-  process.on('exit', () => {
-    // best we can do
-    b = true;
-  });
+const cronsList = new Crons({
+  environmentVariable: process.env,
+  databaseCachePool,
+  indexerCachePool
+});
 
-  console.log('updating cache');
-
-  while (true) {
-    if (b) {
-      break;
-    }
-    await leaderboardCache.update();
-    await sleep(1000 * 60 * 10); // 10 minutes
+cronsList.forEach(cron => {
+  if (cron.isEnabled()) {
+    nodeCron.schedule(cron.schedule(), async () => {
+      try {
+        await cron.run();
+      } catch (error) {
+        console.log(`error in running cron ${cron.cronName()}`, error);
+      }
+    })
   }
-}
-
-const noUpdateCache = process.env['NO_UPDATE_CACHE'];
-if (!noUpdateCache) {
-  recurringUpdateLeaderboards();
-}
+})
 
 app.use(index.routes()).use(index.allowedMethods());
 
