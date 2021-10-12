@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "start": "node -r dotenv/config ./index.js",
+    "start": "node --trace-warnings -r dotenv/config ./index.js",
     "start:prod": "node -r dotenv/config dist",
     "build": "esbuild index.js --platform=node --bundle --outfile=dist/index.js --target=node14 --external:canvas --external:pg"
   },
