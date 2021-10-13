@@ -1,5 +1,3 @@
-const { createPool } = require('slonik');
-
 const { LeaderboardCache } = require('./leaderboards');
 
 function Crons(spec) {
