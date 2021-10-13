@@ -7,6 +7,7 @@ const fs = require('fs');
 const path = require('path');
 let Promise = {};
 
+
 /**
   * We receive the dbmigrate dependency from dbmigrate initially.
   * This enables us to not have to rely on NODE_PATH.
@@ -19,9 +20,9 @@ exports.setup = function(options, seedLink) {
 };
 
 exports.up = function(db) {
-  var filePath = path.join(__dirname, 'sqls', '20210928143424-create-cache-up.sql');
-  return new Promise( function( resolve, reject ) {
-    fs.readFile(filePath, {encoding: 'utf-8'}, function(err,data){
+  var filePath = path.join(__dirname, 'sqls', '20211013054148-add-user-percentile-cache-up.sql');
+  return new Promise(function (resolve, reject) {
+    fs.readFile(filePath, {encoding: 'utf-8'}, function(err, data) {
       if (err) return reject(err);
       console.log('received data: ' + data);
 
@@ -34,9 +35,9 @@ exports.up = function(db) {
 };
 
 exports.down = function(db) {
-  var filePath = path.join(__dirname, 'sqls', '20210928143424-create-cache-down.sql');
-  return new Promise( function( resolve, reject ) {
-    fs.readFile(filePath, {encoding: 'utf-8'}, function(err,data){
+  var filePath = path.join(__dirname, 'sqls', '20211013054148-add-user-percentile-cache-down.sql');
+  return new Promise(function (resolve, reject) {
+    fs.readFile(filePath, {encoding: 'utf-8'}, function(err, data) {
       if (err) return reject(err);
       console.log('received data: ' + data);
 
