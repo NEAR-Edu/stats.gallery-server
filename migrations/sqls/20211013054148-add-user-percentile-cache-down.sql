@@ -1,1 +1,1 @@
-DROP TABLE user_percentile;
+DROP TABLE user_percentiles;
