@@ -22,7 +22,7 @@ class LeaderboardCache {
   }
 
   schedule() {
-    return '*/10 * * * *';  // every 10 minutes
+    return '*/10 * * * *'; // every 10 minutes
   }
 
   async queryUpdatedAccountsFromIndexer(sinceBlockHeight) {

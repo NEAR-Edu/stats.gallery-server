@@ -3,11 +3,13 @@ const { LeaderboardCache } = require('./leaderboards');
 function Crons(spec) {
   const { environmentVariable, databaseCachePool, indexerCachePool } = spec;
 
-  const leaderboardCache = new LeaderboardCache(databaseCachePool, indexerCachePool, environmentVariable);
+  const leaderboardCache = new LeaderboardCache(
+    databaseCachePool,
+    indexerCachePool,
+    environmentVariable,
+  );
 
-  return [
-    leaderboardCache
-  ]
+  return [leaderboardCache];
 }
 
 module.exports = Crons;
