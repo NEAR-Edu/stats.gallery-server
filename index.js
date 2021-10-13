@@ -27,6 +27,17 @@ const databaseCachePool = createPool(process.env['CACHE_DB_CONNECTION']);
 const indexerDatabaseString = connections[endpoints.indexOf('mainnet')];
 const indexerCachePool = createPool(indexerDatabaseString);
 
+// we want to ensure that we close the connection pool when we exit the app to avoid memory leaks
+process.on('exit', async () => {
+  try {
+    await Promise.all([
+      await databaseCachePool.end(),
+      await indexerCachePool.end()
+    ]);
+  } catch (error) {
+    console.log('Error closing cache connection pools', error);
+  }
+});
 
 if (endpoints.length === 0 || endpoints.length !== connections.length) {
   console.error('Invalid endpoint/connection configuration provided');

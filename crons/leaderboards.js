@@ -11,10 +11,6 @@ class LeaderboardCache {
     this.indexerPool = indexerCachePool;
 
     this.environmentVar = environment;
-
-    process.on('exit', async () => {
-      await Promise.all([this.indexerPool.end(), this.cachePool.end()]);
-    });
   }
 
   isEnabled() {
