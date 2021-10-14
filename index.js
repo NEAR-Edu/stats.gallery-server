@@ -32,7 +32,7 @@ process.on('exit', async () => {
   try {
     await Promise.all([
       await databaseCachePool.end(),
-      await indexerCachePool.end()
+      await indexerCachePool.end(),
     ]);
   } catch (error) {
     console.log('Error closing cache connection pools', error);
@@ -82,7 +82,9 @@ endpoints.forEach((endpoint, i) => {
         console.log('Request', ctx.request.url);
         try {
           // const result = await routePool.any(route.query(ctx.query));
-          const result = await retry(() => routePool.any(route.query(ctx.query)));
+          const result = await retry(() =>
+            routePool.any(route.query(ctx.query)),
+          );
           // console.log('Response', result);
 
           ctx.response.body = result;
@@ -141,10 +143,10 @@ index.get('/card/:accountId/card.png', async (ctx, next) => {
 const cronsList = new Crons({
   environmentVariable: process.env,
   databaseCachePool,
-  indexerCachePool
+  indexerCachePool,
 });
 
-cronsList.forEach(cron => {
+cronsList.forEach((cron) => {
   if (cron.isEnabled()) {
     nodeCron.schedule(cron.schedule(), async () => {
       try {
@@ -152,9 +154,9 @@ cronsList.forEach(cron => {
       } catch (error) {
         console.log(`error in running cron ${cron.cronName()}`, error);
       }
-    })
+    });
   }
-})
+});
 
 app.use(index.routes()).use(index.allowedMethods());
 
