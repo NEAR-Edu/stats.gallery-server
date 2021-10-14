@@ -1,5 +1,9 @@
 # Set up
 
+## Runtime Dependencies
+1. node.js 14.x
+2. npm v7 and above
+
 ## Connect to cache database & run migrations
 
 You will need a PostgreSQL connection string with full permissions.
