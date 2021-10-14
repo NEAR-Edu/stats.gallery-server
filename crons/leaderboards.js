@@ -1,16 +1,31 @@
-const fs = require('fs/promises');
 const { sql } = require('slonik');
-const { sleep } = require('../utils/sleep');
 const accountCreationSql = require('../queries/account-creation.sql');
 const scoreSql = require('../queries/score-calculate.sql');
 
+/**
+ * @typedef {'created_at_block_timestamp' | 'balance' | 'score'} AccountColumn
+ * @typedef {{ account_id: string; balance: string; score: number; created_at_block_timestamp: number; modified: number; }} AccountRecord
+ */
+
 class LeaderboardCache {
   constructor(statsGalleryCachePool, indexerCachePool, environment) {
+    /** @type {Map<AccountColumn, (accountId: string) => Promise<any>>} */
+    this.cols = new Map(
+      Object.entries({
+        score: this.getAccountScore.bind(this),
+        balance: this.getAccountBalance.bind(this),
+        created_at_block_timestamp: this.getAccountCreated.bind(this),
+      }),
+    );
+
     this.cachePool = statsGalleryCachePool;
 
     this.indexerPool = indexerCachePool;
 
     this.environmentVar = environment;
+
+    // Is the runner running? Used to prevent spawning duplicate runners
+    this.running = false;
   }
 
   isEnabled() {
@@ -25,7 +40,7 @@ class LeaderboardCache {
     return '*/10 * * * *'; // every 10 minutes
   }
 
-  async queryUpdatedAccountsFromIndexer(sinceBlockHeight) {
+  async queryNewAccountsFromIndexer(sinceBlockHeight) {
     const queryResult = await this.indexerPool.many(sql`
       select account_id,
         last_update_block_height
@@ -47,36 +62,21 @@ class LeaderboardCache {
     return { accounts, lastUpdateBlockHeight };
   }
 
-  async queryAllAccountsFromIndexer() {
-    const queryResult = await this.indexerPool.many(sql`
-      select account_id,
-        last_update_block_height
-      from accounts
-      where deleted_by_receipt_id is null
-    `);
-
-    const accounts = [];
-    let lastUpdateBlockHeight = 0;
-
-    for (record of queryResult) {
-      accounts.push(record.account_id + '');
-      if (record.last_update_block_height > lastUpdateBlockHeight) {
-        lastUpdateBlockHeight = record.last_update_block_height;
-      }
-    }
-
-    return { accounts, lastUpdateBlockHeight };
-  }
-
-  /** @typedef {{ account_id: string; balance: string; score: number; }} AccountRecord */
-  /** @type {() => Promise<AccountRecord[]>} */
-  async queryAllAccountsFromCache() {
+  /** @type {(limit: number) => Promise<AccountRecord[]>} */
+  async queryStaleAccountsFromCache(limit = 100) {
     try {
-      const res = await this.cachePool.many(sql`
-        select * from account
+      return await this.cachePool.many(sql`
+        select
+          account_id,
+          balance::text,
+          score,
+          created_at_block_timestamp,
+          modified
+        from account
+        order by modified asc
+        limit ${limit}
       `);
-      return res;
-    } catch (err) {
+    } catch (e) {
       // not yet initialized
       return [];
     }
@@ -130,15 +130,6 @@ class LeaderboardCache {
     });
   }
 
-  async fileExists(...paths) {
-    try {
-      await Promise.all(paths.map((path) => fs.access(path)));
-      return true;
-    } catch (e) {
-      return false;
-    }
-  }
-
   writeLastUpdateBlockHeight(lastUpdateBlockHeight) {
     return this.cachePool.query(sql`
       -- single row table, so no where clause necessary
@@ -147,16 +138,14 @@ class LeaderboardCache {
   }
 
   async loadAccounts() {
-    const cachedAccounts = await this.queryAllAccountsFromCache();
     const cachedLastUpdateBlockHeight =
       await this.queryLastUpdateBlockHeightFromCache();
 
-    const { accounts: accountsToUpdate, lastUpdateBlockHeight } =
-      await this.queryUpdatedAccountsFromIndexer(cachedLastUpdateBlockHeight);
+    const { accounts: newAccounts, lastUpdateBlockHeight } =
+      await this.queryNewAccountsFromIndexer(cachedLastUpdateBlockHeight);
 
     return {
-      cachedAccounts,
-      accountsToUpdate,
+      newAccounts,
       lastUpdateBlockHeight,
     };
   }
@@ -191,220 +180,156 @@ class LeaderboardCache {
     }
   }
 
-  async queryAndUpdate(name, accounts, queryFn, updateFn) {
-    const maxSimultaneousRequests = 10;
-
-    let group = [];
-    for (let i = 0; i < accounts.length; i++) {
-      if (i > 0 && i % 1000 === 0) {
-        console.log(
-          `${name} cache update: ${i} / ${accounts.length} (${(
-            (i * 100) /
-            accounts.length
-          ).toFixed(2)}%)`,
-        );
-      }
-
-      if (group.length >= maxSimultaneousRequests) {
-        // console.log('group', i / maxSimultaneousRequests);
-
-        await Promise.all(
-          group.map(async (account, j) => {
-            let remainingRetries = 3;
-            let err;
-            while (remainingRetries > 0) {
-              try {
-                const value = await queryFn(account);
-                await updateFn(account, value);
-                // console.log('Updated ', account);
-                return;
-              } catch (e) {
-                // oh well
-                err = e;
-                remainingRetries--;
-                await sleep(2000);
-              }
-            }
-            console.log(
-              `Query ${name} ${i + j} failed on account ${account}, ${err}`,
-            );
-          }),
-        );
-
-        // be nice
-        // await sleep(100);
-
-        group = [];
-      }
-
-      group.push(accounts[i]);
-    }
-  }
-
-  async queryBalancesFromIndexerAndUpdate(accounts) {
-    const maxSimultaneousRequests = 10;
-
-    const balances = new Map();
-
-    let group = [];
-    for (let i = 0; i < accounts.length; i++) {
-      if (i > 0 && i % 1000 === 0) {
-        console.log('Leaderboard cache update', i);
-      }
-
-      if (group.length >= maxSimultaneousRequests) {
-        // console.log('group', i / maxSimultaneousRequests);
-
-        await Promise.all(
-          group.map(async (account) => {
-            try {
-              const [balance, score] = await Promise.all([
-                this.getAccountBalance(account),
-                this.getAccountScore(account),
-              ]);
-              await this.writeBalanceAndScore(account, balance, score);
-              // console.log('wrote balance and score for', account);
-              balances.set(account, balance);
-            } catch (e) {
-              // oh well
-              console.log('Unable to query and write balance for ', account, e);
-            }
-          }),
-        );
-
-        // be nice
-        // await sleep(100);
-
-        group = [];
-      }
-
-      group.push(accounts[i]);
-    }
-
-    return balances;
-  }
-
-  /** @type {() => Promise<string[]>} */
+  /** @type {() => Promise<{ account_id: string; missing_columns: string; }[]>} */
   queryAccountsWithNullsFromCache() {
-    return this.cachePool.manyFirst(sql`
-      select account_id from account
-        where balance is null
-          or score is null
-          or created_at_block_timestamp is null
+    const colNames = Array.from(this.cols.keys());
+
+    return this.cachePool.many(sql`
+      select account_id, concat(
+        ${sql.join(
+          colNames.map(
+            (col) =>
+              sql`case when ${sql.identifier([col])} is null then ${
+                col + ','
+              } else '' end`,
+          ),
+          sql`, `,
+        )}
+      ) as missing_columns
+      from account
+      where ${sql.join(
+        colNames.map((col) => sql`${sql.identifier([col])} is null`),
+        sql` or `,
+      )}
     `);
   }
 
-  /** @type {() => Promise<string[]>} */
-  queryAccountsWithNullBalanceFromCache() {
-    return this.cachePool.manyFirst(sql`
-      select account_id from account
-        where balance is null
-    `);
-  }
+  async updateAccount(
+    /** @type {string} */ accountId,
+    /** @type {AccountColumn[]} */ columnsToUpdate,
+  ) {
+    let promises = [];
+    let sets = [];
 
-  /** @type {() => Promise<string[]>} */
-  queryAccountsWithNullScoreFromCache() {
-    return this.cachePool.manyFirst(sql`
-      select account_id from account
-        where score is null
-    `);
-  }
+    this.cols.forEach((getter, colName) => {
+      if (columnsToUpdate.includes(colName)) {
+        promises.push(
+          getter(accountId)
+            .then((value) => {
+              sets.push(sql`${sql.identifier([colName])} = ${value}`);
+            })
+            .catch((e) => {
+              // ignore
+              console.log('Could not get ' + colName + ' for ' + accountId);
+            }),
+        );
+      }
+    });
 
-  /** @type {() => Promise<string[]>} */
-  queryAccountsWithNullCreatedFromCache() {
-    return this.cachePool.manyFirst(sql`
-      select account_id from account
-        where created_at_block_timestamp is null
-    `);
-  }
+    await Promise.all(promises);
 
-  writeBalance(account, balance) {
-    return this.cachePool.query(sql`
-      update account
-        set balance = ${balance}
-        where account_id = ${account}
-    `);
-  }
-
-  writeScore(account, score) {
-    return this.cachePool.query(sql`
-      update account
-        set score = ${score}
-        where account_id = ${account}
-    `);
-  }
-
-  writeCreated(account, created) {
-    if (created == null) return;
-    return this.cachePool.query(sql`
-      update account
-        set created_at_block_timestamp = ${created}
-        where account_id = ${account}
-    `);
-  }
-
-  writeBalanceAndScore(account, balance, score) {
-    return this.cachePool.query(sql`
-      update account
-        set score = ${score},
-          balance = ${balance}
-        where account_id = ${account}
-    `);
-  }
-
-  writeBalances(/** @type {Map<string, string>} */ balances) {
-    for (const [account, balance] in balances.entries()) {
-      this.writeBalance(account, balance);
+    if (sets.length) {
+      return this.cachePool.query(sql`
+        update account
+          set ${sql.join(sets, sql`, `)}
+          where account_id = ${accountId}
+      `);
+    } else {
+      return Promise.reject('No updates procured');
     }
   }
 
   async run() {
+    // Don't allow cron to spawn more than one runner at a time
+    if (this.running) {
+      console.log('Attempted to spawn duplicate cache updater, returning');
+      return;
+    }
+    this.running = true;
+
     console.log('Loading accounts...');
-    const { cachedAccounts, accountsToUpdate, lastUpdateBlockHeight } =
-      await this.loadAccounts();
+    const { newAccounts, lastUpdateBlockHeight } = await this.loadAccounts();
     console.log('Done loading accounts');
 
     console.log('Writing account ids...');
-    await this.writeAccountIds(accountsToUpdate);
+    await this.writeAccountIds(newAccounts);
     console.log('Done writing account ids');
-    // We don't much care to wait for this async function to complete
-    this.writeLastUpdateBlockHeight(lastUpdateBlockHeight);
 
-    const [updateBalanceAccounts, updateScoreAccounts, updateCreatedAccounts] =
-      await Promise.all([
-        this.queryAccountsWithNullBalanceFromCache(),
-        this.queryAccountsWithNullScoreFromCache(),
-        this.queryAccountsWithNullCreatedFromCache(),
-      ]);
+    console.log('Writing last update block height...');
+    await this.writeLastUpdateBlockHeight(lastUpdateBlockHeight);
+    console.log('Done writing last update block height');
 
-    console.log('Null balance:', updateBalanceAccounts.length);
-    console.log('Null score:', updateScoreAccounts.length);
-    console.log('Null created:', updateCreatedAccounts.length);
+    console.log('Loading accounts with nulls...');
+    const accountsWithNulls = await this.queryAccountsWithNullsFromCache();
+    console.log('Done loading accounts with nulls');
 
-    console.log('Updates to new/stale accounts', accountsToUpdate.length);
+    console.log(
+      'Updating ' + accountsWithNulls.length + ' accounts with nulls...',
+    );
 
-    await Promise.all([
-      this.queryAndUpdate(
-        'Balance',
-        updateBalanceAccounts.concat(accountsToUpdate),
-        (account) => this.getAccountBalance(account),
-        (account, value) => this.writeBalance(account, value),
-      ),
-      this.queryAndUpdate(
-        'Score',
-        updateScoreAccounts.concat(accountsToUpdate),
-        (account) => this.getAccountScore(account),
-        (account, value) => this.writeScore(account, value),
-      ),
-      this.queryAndUpdate(
-        'Created',
-        updateCreatedAccounts.concat(accountsToUpdate),
-        (account) => this.getAccountCreated(account),
-        (account, value) => this.writeCreated(account, value),
-      ),
-    ]);
+    const groupSize = 10;
 
-    console.log('Done writing updates.');
+    for (let i = 0; i < accountsWithNulls.length; i += groupSize) {
+      console.log(
+        `Accounts with nulls: ${i} / ${accountsWithNulls.length} (${(
+          (i / accountsWithNulls.length) *
+          100
+        ).toFixed(2)}%)`,
+      );
+
+      await Promise.all(
+        accountsWithNulls.slice(i, groupSize).map((record) =>
+          this.updateAccount(
+            record.account_id,
+
+            // Trailing comma means we have an empty element at the end of the
+            // array, but it doesn't matter
+            record.missing_columns.split(','),
+          ).catch((e) => {
+            console.log('Could not update ' + record.account_id, e);
+          }),
+        ),
+      );
+    }
+
+    console.log('Done updating accounts with nulls');
+    console.log('Updating stale accounts...');
+
+    let maxModified = 0;
+    let i = 0;
+    const day = 1000 * 60 * 60 * 24;
+
+    // Accounts last modified earlier than staleTime should be updated
+    const staleTime = day / 2;
+
+    while (Date.now() - maxModified > staleTime) {
+      console.log('Stale accounts group ' + i);
+      console.log('Loading stale accounts...');
+      const staleAccounts = await this.queryStaleAccountsFromCache(10);
+      console.log('Done loading stale accounts');
+
+      console.log('Updating ' + staleAccounts.length + ' stale accounts...');
+      await Promise.all(
+        staleAccounts.map((record) => {
+          maxModified = Math.max(maxModified, record.modified);
+          return this.updateAccount(record.account_id, [
+            'balance',
+            'score',
+          ]).catch((e) => {
+            console.log('Could not update ' + record.account_id, e);
+          });
+        }),
+      );
+      console.log('Done updating ' + staleAccounts.length + ' stale accounts');
+
+      i++;
+    }
+
+    console.log('Done updating stale accounts');
+
+    console.log('Done writing updates');
+
+    this.running = false;
   }
 }
 
