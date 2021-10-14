@@ -131,7 +131,7 @@ index.get('/card/:accountId/card.png', async (ctx, next) => {
   ctx.set('content-type', 'image/png');
   try {
     ctx.body = (
-      await draw(ctx.params.accountId, pools[0], leaderboardCache.cachePool)
+      await draw(ctx.params.accountId, pools[0], databaseCachePool)
     ).toBuffer();
   } catch (e) {
     console.log(e);
