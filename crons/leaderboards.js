@@ -14,7 +14,7 @@ class LeaderboardCache {
   }
 
   isEnabled() {
-    return this.environmentVar['NO_UPDATE_CACHE'];
+    return !this.environmentVar['NO_UPDATE_CACHE'];
   }
 
   cronName() {
