@@ -14,7 +14,7 @@ class LeaderboardCache {
   }
 
   isEnabled() {
-    return this.environmentVar['NO_UPDATE_CACHE'];
+    return !this.environmentVar['NO_UPDATE_CACHE'];
   }
 
   cronName() {
@@ -22,7 +22,7 @@ class LeaderboardCache {
   }
 
   schedule() {
-    return '*/10 * * * *';  // every 10 minutes
+    return '*/10 * * * *'; // every 10 minutes
   }
 
   async queryUpdatedAccountsFromIndexer(sinceBlockHeight) {
