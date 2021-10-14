@@ -23,6 +23,9 @@ class LeaderboardCache {
     this.indexerPool = indexerCachePool;
 
     this.environmentVar = environment;
+
+    // Is the runner running? Used to prevent spawning duplicate runners
+    this.running = false;
   }
 
   isEnabled() {
@@ -237,6 +240,13 @@ class LeaderboardCache {
   }
 
   async run() {
+    // Don't allow cron to spawn more than one runner at a time
+    if (this.running) {
+      console.log('Attempted to spawn duplicate cache updater, returning');
+      return;
+    }
+    this.running = true;
+
     console.log('Loading accounts...');
     const { newAccounts, lastUpdateBlockHeight } = await this.loadAccounts();
     console.log('Done loading accounts');
@@ -318,6 +328,8 @@ class LeaderboardCache {
     console.log('Done updating stale accounts');
 
     console.log('Done writing updates');
+
+    this.running = false;
   }
 }
 
