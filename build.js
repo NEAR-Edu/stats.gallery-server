@@ -2,7 +2,7 @@ const isProduction =
   (process.env['NODE_ENV'] || '').toLowerCase() === 'production';
 
 require('esbuild').build({
-  entryPoints: ['src/index.js'],
+  entryPoints: ['src/index.ts'],
   external: ['canvas', 'pg'],
   platform: 'node',
   bundle: true,

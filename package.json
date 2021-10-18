@@ -2,13 +2,14 @@
   "name": "server",
   "version": "0.1.0",
   "description": "",
-  "main": "index.js",
   "scripts": {
-    "start": "node --trace-warnings -r dotenv/config ./index.js",
-    "start:prod": "node -r dotenv/config dist",
-    "clean": "rm -r dist",
-    "build": "npm ./build.js",
-    "build:prod": "cross-env NODE_ENV=production npm ./build.js"
+    "check": "tsc -noEmit",
+    "clean": "rm -rf dist",
+    "build": "node ./build.js",
+    "build:prod": "cross-env NODE_ENV=production npm ./build.js",
+    "dev": "npm run check && npm run clean && npm run build",
+    "prod": "npm run check && npm run clean && npm run build:prod",
+    "start": "node -r dotenv/config dist/index.js"
   },
   "author": "Jacob Lindahl <jacob@near.foundation>",
   "license": "GPL-3.0-only",
@@ -22,6 +23,10 @@
     "slonik": "^23.8.0"
   },
   "devDependencies": {
+    "@types/koa": "^2.13.4",
+    "@types/koa__cors": "^3.0.3",
+    "@types/koa__router": "^8.0.8",
+    "@types/node-cron": "^3.0.0",
     "cross-env": "^7.0.3",
     "db-migrate": "^1.0.0-beta.16",
     "db-migrate-pg": "^1.2.2",
