@@ -44,7 +44,7 @@ function poll(fn, options) {
         );
       } else {
         // Reject and schedule next
-        result = Promise.reject();
+        result = Promise.reject(e);
         id = setTimeout(() => update(0), options.updateInterval);
       }
     }

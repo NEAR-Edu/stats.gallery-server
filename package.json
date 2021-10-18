@@ -6,7 +6,9 @@
   "scripts": {
     "start": "node --trace-warnings -r dotenv/config ./index.js",
     "start:prod": "node -r dotenv/config dist",
-    "build": "esbuild index.js --platform=node --bundle --outfile=dist/index.js --target=node14 --external:canvas --external:pg"
+    "clean": "rm -r dist",
+    "build": "npm ./build.js",
+    "build:prod": "cross-env NODE_ENV=production npm ./build.js"
   },
   "author": "Jacob Lindahl <jacob@near.foundation>",
   "license": "GPL-3.0-only",
@@ -20,9 +22,11 @@
     "slonik": "^23.8.0"
   },
   "devDependencies": {
+    "cross-env": "^7.0.3",
     "db-migrate": "^1.0.0-beta.16",
     "db-migrate-pg": "^1.2.2",
-    "esbuild": "^0.13.8"
+    "esbuild": "^0.13.8",
+    "typescript": "^4.4.4"
   },
   "engines": {
     "node": "14.x",

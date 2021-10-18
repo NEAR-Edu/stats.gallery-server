@@ -44,7 +44,7 @@ if (endpoints.length === 0 || endpoints.length !== connections.length) {
   process.exit(1);
 }
 
-endpoints.forEach((endpoint, i) => {
+endpoints.forEach(async (endpoint, i) => {
   const connection = connections[i];
   const router = new Router();
 
@@ -54,6 +54,8 @@ endpoints.forEach((endpoint, i) => {
     maximumPoolSize: 31,
   });
   pools.push(pool);
+
+  console.log('Pool test:', await pool.one(sql`select 1`));
 
   routes.forEach((route) => {
     const routePool = route.db === 'cache' ? databaseCachePool : pool;

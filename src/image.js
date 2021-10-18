@@ -10,17 +10,17 @@ const { humanizeLevel } = require('./utils/humanize');
 
 require('dotenv').config();
 
-registerFont(__dirname + '/fonts/DMSans-Regular.ttf', {
+registerFont(require('../assets/fonts/DMSans-Regular.ttf'), {
   family: 'DM Sans',
   weight: '400',
 });
 
-registerFont(__dirname + '/fonts/DMSans-Bold.ttf', {
+registerFont(require('../assets/fonts/DMSans-Bold.ttf'), {
   family: 'DM Sans',
   weight: '700',
 });
 
-registerFont(__dirname + '/fonts/Rubik-Bold.ttf', {
+registerFont(require('../assets/fonts/Rubik-Bold.ttf'), {
   family: 'Rubik',
   weight: '700',
 });
@@ -56,7 +56,8 @@ function drawScore(ctx, score) {
 }
 
 async function drawLevel(ctx, level) {
-  const image = await loadImage(__dirname + '/img/star.png');
+  // const image = await loadImage(__dirname + '/img/star.png');
+  const image = await loadImage(require('../assets/img/star.png'));
 
   ctx.drawImage(image, 0, 0, 100, 100);
 
@@ -69,7 +70,7 @@ async function drawLevel(ctx, level) {
 }
 
 async function drawBadge(ctx, path) {
-  const image = await loadImage(__dirname + path);
+  const image = await loadImage(path);
 
   ctx.drawImage(image, 0, 0, 80, (80 / image.width) * image.height);
 
@@ -78,19 +79,19 @@ async function drawBadge(ctx, path) {
 
 const badges = [
   {
-    path: '/img/badge-nft.png',
+    path: require('../assets/img/badge-nft.png'),
     call: badgeNftSql,
   },
   {
-    path: '/img/badge-transfer.png',
+    path: require('../assets/img/badge-transfer.png'),
     call: badgeTransferSql,
   },
   {
-    path: '/img/badge-stake.png',
+    path: require('../assets/img/badge-stake.png'),
     call: badgeStakeSql,
   },
   {
-    path: '/img/badge-deploy.png',
+    path: require('../assets/img/badge-deploy.png'),
     call: badgeDeploySql,
   },
 ];
@@ -192,12 +193,12 @@ async function draw(accountName, pool, cachePool) {
   ctx.fillText(rank, 0, 0);
   ctx.restore();
 
-  const icon = await loadImage(__dirname + '/img/icon.png');
+  const icon = await loadImage(require('../assets/img/icon.png'));
   const iconWidth = 200;
   const iconHeight = (iconWidth / icon.width) * icon.height;
   ctx.drawImage(icon, width - iconWidth - 70, 80, iconWidth, iconHeight);
 
-  const logo = await loadImage(__dirname + '/img/logo.png');
+  const logo = await loadImage(require('../assets/img/logo.png'));
   const logoWidth = 400;
   const logoHeight = (logoWidth / logo.width) * logo.height;
   ctx.drawImage(
