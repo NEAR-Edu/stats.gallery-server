@@ -21,6 +21,4 @@ export default function visit(spec: CanvasVisitorSpec) {
   const scoreSizeInPixels = textSize.width + 2 * 40;
 
   return scoreSizeInPixels;
-
-
 }

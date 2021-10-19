@@ -7,7 +7,7 @@ export async function visit(spec: CanvasVisitorSpec) {
   const { canvasContext, level } = spec;
 
   if (!level) {
-    throw new Error('level is required in calling levelVisitor')
+    throw new Error('level is required in creating level graphic');
   }
 
   const image = await loadImage(require('../assets/img/star.png'));
