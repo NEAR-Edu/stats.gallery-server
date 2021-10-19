@@ -7,7 +7,7 @@ export default async function visit(spec: CanvasVisitorSpec) {
   const { canvasContext, path } = spec;
 
   if (!path) {
-    throw new Error('Path is required when creating a badge');
+    throw new Error('path is required in creating a badge graphic');
   }
 
   const image = await loadImage(path);
