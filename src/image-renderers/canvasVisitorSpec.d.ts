@@ -4,4 +4,5 @@ export interface CanvasVisitorSpec {
   canvasContext: NodeCanvasRenderingContext2D;
   path?: string;
   level?: number;
+  score?: number;
 }
