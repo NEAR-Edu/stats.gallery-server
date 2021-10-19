@@ -1,2 +1,2 @@
-drop table badge_group;
 drop table badge;
+drop table badge_group;

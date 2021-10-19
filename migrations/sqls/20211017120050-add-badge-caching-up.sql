@@ -3,8 +3,6 @@ create table badge_group (
   group_name text
 );
 
-create unique index uniqe_badge_group_name on badge_group using btree (group_name);
-
 create table badge (
   id uuid primary key,
   badge_group_id uuid,
