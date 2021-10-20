@@ -4,6 +4,7 @@ import Koa from 'koa';
 import { schedule } from 'node-cron';
 import { createPool, DatabasePoolType, sql } from 'slonik';
 import initCrons from './crons';
+import { draw } from './image';
 import poll from './poll';
 import { Params } from './queries/Params';
 import routes from './routes';
@@ -123,8 +124,6 @@ index.get('/status', async (ctx, next) => {
   await next();
   return;
 });
-
-const draw = require('./image');
 
 index.get('/card/:accountId/card.png', async (ctx, next) => {
   ctx.set('content-type', 'image/png');

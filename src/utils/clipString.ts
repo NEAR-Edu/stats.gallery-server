@@ -1,6 +1,6 @@
 const hellip = '\u2026';
 
-module.exports = function clipString(str, max, rebound = 0) {
+export function clipString(str: string, max: number, rebound = 0) {
   if (str.length > max) {
     return str.slice(0, max - rebound) + hellip;
   } else {
