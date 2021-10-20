@@ -1,6 +1,22 @@
 import { NodeCanvasRenderingContext2D } from "canvas";
 
-interface RectangleGraphic {
+export interface CanvasVisitorSpec {
+  canvasContext:       NodeCanvasRenderingContext2D;
+}
+
+interface CanvasVisitor {
+  visit(): Promise<number | undefined>;
+}
+
+export interface BadgeVisitorSpec extends CanvasVisitorSpec {
+  path: string;
+}
+
+export interface LevelVisitorSpec extends CanvasVisitorSpec {
+  level: number;
+}
+
+export interface RoundedRectangleVisitorSpec extends CanvasVisitorSpec {
   x:            number;
   y:            number;
   width:        number;
@@ -8,10 +24,6 @@ interface RectangleGraphic {
   borderRadius: number;
 }
 
-export interface CanvasVisitorSpec {
-  canvasContext:       NodeCanvasRenderingContext2D;
-  path?:               string;
-  level?:              number;
-  score?:              number;
-  rectangleDimension?: RectangleGraphic;
+export interface ScoreVisitorSpec extends CanvasVisitorSpec {
+  score: number;
 }
