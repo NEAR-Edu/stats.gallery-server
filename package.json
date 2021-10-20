@@ -6,7 +6,7 @@
     "check": "tsc -noEmit",
     "clean": "rm -rf dist",
     "build": "node ./build.js",
-    "build:prod": "cross-env NODE_ENV=production npm ./build.js",
+    "build:prod": "cross-env NODE_ENV=production node ./build.js",
     "dev": "npm run check && npm run clean && npm run build",
     "prod": "npm run check && npm run clean && npm run build:prod",
     "start": "node -r dotenv/config dist/index.js"
@@ -35,6 +35,6 @@
   },
   "engines": {
     "node": "14.x",
-    "npm": ">=7"
+    "npm": ">=6"
   }
 }
