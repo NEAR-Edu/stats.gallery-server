@@ -8,8 +8,6 @@ const scoreSql = require('./queries/score-from-cache.sql');
 const { currentLevel } = require('./utils/level');
 const { humanizeLevel } = require('./utils/humanize');
 
-require('dotenv').config();
-
 registerFont(require('../assets/fonts/DMSans-Regular.ttf'), {
   family: 'DM Sans',
   weight: '400',
