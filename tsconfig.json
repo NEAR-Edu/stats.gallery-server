@@ -2,12 +2,12 @@
   "compilerOptions": {
     "strict": true,
     "allowJs": true,
+    "noEmit": true,
     "allowSyntheticDefaultImports": true,
     "lib": ["ES2020"],
     "module": "ES2020",
     "moduleResolution": "node",
     "target": "ES2020"
   },
-  "exclude": ["node_modules", "dist"],
-  "include": ["./src/Declaration.d.ts"]
+  "include": ["src", "typings.d.ts"]
 }
