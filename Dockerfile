@@ -16,7 +16,7 @@ WORKDIR /usr/src/app
 # install python 3 for canvas NPM library
 RUN apt-get update || : && apt-get install python3 -y
 # package & production dependencies
-COPY package*.json .
+COPY package*.json .env* ./
 RUN npm ci --only=production
 # built version from build container
 COPY --from=build /usr/src/app/dist/* dist/
