@@ -2,11 +2,14 @@
   "name": "server",
   "version": "0.1.0",
   "description": "",
-  "main": "index.js",
   "scripts": {
-    "start": "node --trace-warnings -r dotenv/config ./index.js",
-    "start:prod": "node -r dotenv/config dist",
-    "build": "esbuild index.js --platform=node --bundle --outfile=dist/index.js --target=node14 --external:canvas --external:pg"
+    "check": "tsc -noEmit",
+    "clean": "rm -rf dist",
+    "build": "node ./build.js",
+    "build:prod": "cross-env NODE_ENV=production node ./build.js",
+    "dev": "npm run check && npm run clean && npm run build",
+    "prod": "npm run check && npm run clean && npm run build:prod",
+    "start": "node -r dotenv/config dist/index.js"
   },
   "author": "Jacob Lindahl <jacob@near.foundation>",
   "license": "GPL-3.0-only",
@@ -20,12 +23,18 @@
     "slonik": "^23.8.0"
   },
   "devDependencies": {
+    "@types/koa": "^2.13.4",
+    "@types/koa__cors": "^3.0.3",
+    "@types/koa__router": "^8.0.8",
+    "@types/node-cron": "^3.0.0",
+    "cross-env": "^7.0.3",
     "db-migrate": "^1.0.0-beta.16",
     "db-migrate-pg": "^1.2.2",
-    "esbuild": "^0.13.3"
+    "esbuild": "^0.13.8",
+    "typescript": "^4.4.4"
   },
   "engines": {
     "node": "14.x",
-    "npm": ">=7"
+    "npm": ">=6"
   }
 }
