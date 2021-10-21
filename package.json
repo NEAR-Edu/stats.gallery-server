@@ -4,6 +4,8 @@
   "description": "",
   "scripts": {
     "check": "tsc -noEmit",
+    "format:check": "prettier --check .",
+    "format:fix": "prettier --write .",
     "clean": "rm -rf dist",
     "build": "node ./build.js",
     "build:prod": "cross-env NODE_ENV=production node ./build.js",
@@ -31,10 +33,26 @@
     "db-migrate": "^1.0.0-beta.16",
     "db-migrate-pg": "^1.2.2",
     "esbuild": "^0.13.8",
+    "husky": "^7.0.4",
+    "lint-staged": "^11.2.3",
+    "prettier": "^2.4.1",
     "typescript": "^4.4.4"
   },
   "engines": {
     "node": "14.x",
     "npm": ">=6"
+  },
+  "husky": {
+    "hooks": {
+      "pre-commit": "lint-staged"
+    }
+  },
+  "lint-staged": {
+    "*": [
+      "prettier --write"
+    ],
+    "*.ts": [
+      "tsc"
+    ]
   }
 }
