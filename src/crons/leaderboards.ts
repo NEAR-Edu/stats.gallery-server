@@ -295,11 +295,23 @@ export class LeaderboardCache implements CronJob {
             // array, but it doesn't matter
             record.missing_columns.split(',') as AccountColumn[],
           ).catch(e => {
-            console.log('Could not update ' + record.account_id, e); }),),); } console.log('Done updating accounts with nulls'); console.log('Updating stale accounts...'); let maxModified = 0; let i = 0; const day = 1000 * 60 * 60 * 24;
+            console.log('Could not update ' + record.account_id, e);
+          }),
+        ),
+      );
+    }
+    console.log('Done updating accounts with nulls');
+    console.log('Updating stale accounts...');
+    let maxModified = 0;
+    let i = 0;
+    const day = 1000 * 60 * 60 * 24;
     // Accounts last modified earlier than staleTime should be updated
     const staleTime = day / 2;
 
-    while (Date.now() - maxModified > staleTime) { console.log('Stale accounts group ' + i); console.log('Loading stale accounts...'); const staleAccounts = await this.queryStaleAccountsFromCache(10);
+    while (Date.now() - maxModified > staleTime) {
+      console.log('Stale accounts group ' + i);
+      console.log('Loading stale accounts...');
+      const staleAccounts = await this.queryStaleAccountsFromCache(10);
       console.log('Done loading stale accounts');
 
       console.log('Updating ' + staleAccounts.length + ' stale accounts...');
