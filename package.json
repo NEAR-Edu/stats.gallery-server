@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "description": "",
   "scripts": {
+    "prepare": "husky install",
     "check": "tsc -noEmit",
     "format:check": "prettier --check .",
     "format:fix": "prettier --write .",
@@ -41,18 +42,5 @@
   "engines": {
     "node": "14.x",
     "npm": ">=6"
-  },
-  "husky": {
-    "hooks": {
-      "pre-commit": "lint-staged"
-    }
-  },
-  "lint-staged": {
-    "*": [
-      "prettier --write"
-    ],
-    "*.ts": [
-      "tsc"
-    ]
   }
 }
