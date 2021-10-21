@@ -1,11 +1,13 @@
+create extension "uuid-ossp";
+
 create table badge_group (
-  id uuid primary key,
+  id uuid default uuid_generate_v4() primary key,
   function_name text,
   group_name text
 );
 
 create table badge (
-  id uuid primary key,
+  id uuid default uuid_generate_v4() primary key,
   badge_group_id uuid,
   badge_name text not null,
   badge_description text not null,
@@ -15,7 +17,7 @@ create table badge (
 );
 
 create table account_badge (
-  id uuid primary key,
+  id uuid default uuid_generate_v4() primary key,
   account_id text,
   badge_group_id uuid,
   attained_value numeric
