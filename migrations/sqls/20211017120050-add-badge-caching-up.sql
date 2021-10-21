@@ -7,7 +7,7 @@ create table badge_group (
 );
 
 create table badge (
-  id uuid default uuid_generate_v4() primary key,
+  id uuid primary key,
   badge_group_id uuid,
   badge_name text not null,
   badge_description text not null,
