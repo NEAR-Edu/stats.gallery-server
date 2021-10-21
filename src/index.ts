@@ -19,10 +19,8 @@ app.use(cors());
 const index = new Router();
 
 // Environment variable
-const endpoints = process.env['ENDPOINT']!.split(',').map((s) => s.trim());
-const connections = process.env['DB_CONNECTION']!.split(',').map((s) =>
-  s.trim(),
-);
+const endpoints = process.env['ENDPOINT']!.split(',').map(s => s.trim());
+const connections = process.env['DB_CONNECTION']!.split(',').map(s => s.trim());
 const pools: DatabasePoolType[] = [];
 const cachePool = createPool(process.env['CACHE_DB_CONNECTION']!);
 const indexerDatabaseString = connections[endpoints.indexOf('mainnet')];
@@ -55,7 +53,7 @@ endpoints.forEach(async (endpoint, i) => {
 
   console.log('Pool test:', await pool.one(sql`select 1`));
 
-  routes.forEach((route) => {
+  routes.forEach(route => {
     const routePool = route.db === 'cache' ? cachePool : pool;
 
     if (route.poll !== undefined) {
@@ -108,9 +106,9 @@ endpoints.forEach(async (endpoint, i) => {
 index.get('/status', async (ctx, next) => {
   try {
     const queries = await Promise.all(
-      pools.map((pool) => pool.one(sql`select 1 as result`)),
+      pools.map(pool => pool.one(sql`select 1 as result`)),
     );
-    const ok = queries.every((query) => query.result === 1);
+    const ok = queries.every(query => query.result === 1);
     if (ok) {
       ctx.status = 200;
       ctx.response.body = 'ok';
@@ -144,7 +142,7 @@ const cronsList = initCrons({
   indexerPool,
 });
 
-cronsList.forEach((cron) => {
+cronsList.forEach(cron => {
   if (cron.isEnabled) {
     schedule(cron.schedule, async () => {
       try {

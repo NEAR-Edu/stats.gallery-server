@@ -104,7 +104,7 @@ export class LeaderboardCache implements CronJob {
   }
 
   writeAccountIds(accounts: string[]) {
-    return this.cachePool.connect(async (connection) => {
+    return this.cachePool.connect(async connection => {
       const groups = [];
       const size = 100;
       const l = Array.from(accounts);
@@ -200,7 +200,7 @@ export class LeaderboardCache implements CronJob {
       select account_id, concat(
         ${sql.join(
           colNames.map(
-            (col) =>
+            col =>
               sql`case when ${sql.identifier([col])} is null then ${
                 col + ','
               } else '' end`,
@@ -210,7 +210,7 @@ export class LeaderboardCache implements CronJob {
       ) as missing_columns
       from account
       where ${sql.join(
-        colNames.map((col) => sql`${sql.identifier([col])} is null`),
+        colNames.map(col => sql`${sql.identifier([col])} is null`),
         sql` or `,
       )}
     `) as Promise<Readonly<{ account_id: string; missing_columns: string }>[]>;
@@ -224,10 +224,10 @@ export class LeaderboardCache implements CronJob {
       if (columnsToUpdate.includes(colName as AccountColumn)) {
         promises.push(
           getter(accountId)
-            .then((value) => {
+            .then(value => {
               sets.push(sql`${sql.identifier([colName])} = ${value}`);
             })
-            .catch((e) => {
+            .catch(e => {
               // ignore
               console.log('Could not get ' + colName + ' for ' + accountId);
             }),
@@ -287,27 +287,24 @@ export class LeaderboardCache implements CronJob {
       );
 
       await Promise.all(
-        accountsWithNulls.slice(i, groupSize).map((record) =>
+        accountsWithNulls.slice(i, groupSize).map(record =>
           this.updateAccount(
             record.account_id,
 
             // Trailing comma means we have an empty element at the end of the
             // array, but it doesn't matter
             record.missing_columns.split(',') as AccountColumn[],
-          ).catch((e) => {
+          ).catch(e => {
             console.log('Could not update ' + record.account_id, e);
           }),
         ),
       );
     }
-
     console.log('Done updating accounts with nulls');
     console.log('Updating stale accounts...');
-
     let maxModified = 0;
     let i = 0;
     const day = 1000 * 60 * 60 * 24;
-
     // Accounts last modified earlier than staleTime should be updated
     const staleTime = day / 2;
 
@@ -319,12 +316,12 @@ export class LeaderboardCache implements CronJob {
 
       console.log('Updating ' + staleAccounts.length + ' stale accounts...');
       await Promise.all(
-        staleAccounts.map((record) => {
+        staleAccounts.map(record => {
           maxModified = Math.max(maxModified, record.modified);
           return this.updateAccount(record.account_id, [
             'balance',
             'score',
-          ]).catch((e) => {
+          ]).catch(e => {
             console.log('Could not update ' + record.account_id, e);
           });
         }),

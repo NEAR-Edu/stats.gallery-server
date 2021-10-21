@@ -6,13 +6,19 @@ export default (params: Params) => {
     sql`(transactions.signer_account_id = ${params.account_id} or transactions.receiver_account_id = ${params.account_id})`,
   ];
 
-  if (params.after_block_timestamp !== undefined && params.after_block_timestamp > 0) {
+  if (
+    params.after_block_timestamp !== undefined &&
+    params.after_block_timestamp > 0
+  ) {
     conditions.push(
       sql`transactions.block_timestamp >= ${params.after_block_timestamp}`,
     );
   }
 
-  if (params.before_block_timestamp !== undefined && params.before_block_timestamp > 0) {
+  if (
+    params.before_block_timestamp !== undefined &&
+    params.before_block_timestamp > 0
+  ) {
     conditions.push(
       sql`transactions.block_timestamp <= ${params.before_block_timestamp}`,
     );

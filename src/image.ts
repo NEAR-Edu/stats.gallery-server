@@ -40,7 +40,7 @@ export async function draw(
   const scorePromise = cachePool.one(scoreSql({ account_id: accountName }));
 
   const hasPromise = Promise.all(
-    badges.map(async (badge) => {
+    badges.map(async badge => {
       const { result } = await pool.one(
         badge.call({ account_id: accountName }),
       );

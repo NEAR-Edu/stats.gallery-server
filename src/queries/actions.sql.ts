@@ -7,13 +7,19 @@ export default (params: Params) => {
     sql`r.receipt_kind = 'ACTION'`,
   ];
 
-  if (params.after_block_timestamp !== undefined && params.after_block_timestamp > 0) {
+  if (
+    params.after_block_timestamp !== undefined &&
+    params.after_block_timestamp > 0
+  ) {
     conditions.push(
       sql`r.included_in_block_timestamp >= ${params.after_block_timestamp}`,
     );
   }
 
-  if (params.before_block_timestamp !== undefined && params.before_block_timestamp > 0) {
+  if (
+    params.before_block_timestamp !== undefined &&
+    params.before_block_timestamp > 0
+  ) {
     conditions.push(
       sql`r.included_in_block_timestamp <= ${params.before_block_timestamp}`,
     );
