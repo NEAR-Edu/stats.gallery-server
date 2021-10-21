@@ -299,10 +299,7 @@ export class LeaderboardCache implements CronJob {
     // Accounts last modified earlier than staleTime should be updated
     const staleTime = day / 2;
 
-    while (Date.now() - maxModified > staleTime) {
-      console.log('Stale accounts group ' + i);
-      console.log('Loading stale accounts...');
-      const staleAccounts = await this.queryStaleAccountsFromCache(10);
+    while (Date.now() - maxModified > staleTime) { console.log('Stale accounts group ' + i); console.log('Loading stale accounts...'); const staleAccounts = await this.queryStaleAccountsFromCache(10);
       console.log('Done loading stale accounts');
 
       console.log('Updating ' + staleAccounts.length + ' stale accounts...');
