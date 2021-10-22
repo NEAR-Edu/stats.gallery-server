@@ -1,20 +1,13 @@
 import { DatabasePoolType } from 'slonik';
-import { LeaderboardCache } from './leaderboards';
+import { CronJob } from './CronJob';
+import { createCacheJob } from './cache';
 
-export interface CronsSpec {
+export interface CronJobSpec {
   environment: Record<string, string>;
   cachePool: DatabasePoolType;
   indexerPool: DatabasePoolType;
 }
 
-export default function initCrons(spec: CronsSpec) {
-  const { environment, cachePool, indexerPool } = spec;
-
-  const leaderboardCache = new LeaderboardCache(
-    cachePool,
-    indexerPool,
-    environment,
-  );
-
-  return [leaderboardCache];
+export default function initCronJobs(spec: CronJobSpec): CronJob[] {
+  return [createCacheJob(spec)];
 }

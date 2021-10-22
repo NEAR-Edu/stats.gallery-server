@@ -3,7 +3,7 @@ import Router from '@koa/router';
 import Koa from 'koa';
 import { schedule } from 'node-cron';
 import { createPool, DatabasePoolType, sql } from 'slonik';
-import initCrons from './crons';
+import initCronJobs from './crons';
 import { draw } from './image';
 import poll from './poll';
 import { Params } from './queries/Params';
@@ -26,7 +26,7 @@ const cachePool = createPool(process.env['CACHE_DB_CONNECTION']!);
 const indexerDatabaseString = connections[endpoints.indexOf('mainnet')];
 const indexerPool = createPool(indexerDatabaseString);
 
-// we want to ensure that we close the connection pool when we exit the app to avoid memory leaks
+// Ensure connection pools are closed on exit to avoid memory leaks
 process.on('exit', async () => {
   try {
     await Promise.all([await cachePool.end(), await indexerPool.end()]);
@@ -51,7 +51,11 @@ endpoints.forEach(async (endpoint, i) => {
   });
   pools.push(pool);
 
-  console.log('Pool test:', await pool.one(sql`select 1`));
+  console.log(
+    'Pool test:',
+    connection,
+    await pool.one(sql`select 1 as should_be_1`),
+  );
 
   routes.forEach(route => {
     const routePool = route.db === 'cache' ? cachePool : pool;
@@ -136,7 +140,7 @@ index.get('/card/:accountId/card.png', async (ctx, next) => {
   await next();
 });
 
-const cronsList = initCrons({
+const cronsList = initCronJobs({
   environment: process.env as Record<string, string>,
   cachePool,
   indexerPool,
@@ -148,7 +152,7 @@ cronsList.forEach(cron => {
       try {
         await cron.run();
       } catch (error) {
-        console.log(`error in running cron ${cron.cronName}`, error);
+        console.log(`Error in running cron ${cron.cronName}`, error);
       }
     });
   }
