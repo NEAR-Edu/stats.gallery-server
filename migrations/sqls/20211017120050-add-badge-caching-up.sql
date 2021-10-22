@@ -21,7 +21,7 @@ create table account_badge (
   attained_value numeric
 );
 
-create unique index unique_badge_function_name on badge_group using btree (function_name);
+create unique index unique_badge_group_function_name on badge_group using btree (function_name);
 create unique index unique_account_badge_account_and_group_id on account_badge using btree (account_id, badge_group_id);
 
 alter table badge
