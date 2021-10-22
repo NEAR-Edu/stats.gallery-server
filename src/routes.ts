@@ -24,7 +24,7 @@ import sentTransactionCountSql from './queries/sent-transaction-count.sql';
 import topAccountsSql from './queries/top-accounts.sql';
 import totalReceivedSql from './queries/total-received.sql';
 import totalSentSql from './queries/total-sent.sql';
-import mostActiveWalleySql from './queries/most-active-wallet-within-range.sql';
+import mostActiveWalletSql from './queries/most-active-wallet-within-range.sql';
 
 const SECOND = 1000,
   MINUTE = 60 * SECOND,
@@ -153,6 +153,6 @@ export default [
   },
   {
     path: 'top-weekly',
-    query: mostActiveWalleySql
+    query: mostActiveWalletSql
   }
 ];
