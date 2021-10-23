@@ -3,11 +3,6 @@ export interface TimestampRange {
   before_block_timestamp?: number;
 }
 
-export interface LimitAndOffset {
-  limit?: number,
-  offset?: number
-}
-
-export interface Params extends TimestampRange, LimitAndOffset{
+export interface Params extends TimestampRange {
   account_id: string;
 }

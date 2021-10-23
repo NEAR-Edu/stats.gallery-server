@@ -1,27 +1,15 @@
 import { sql } from 'slonik';
 import { Params } from './Params';
 
-export default (params: Params) => {
+export default () => {
+  const currentDate = new Date();
+  const today = currentDate.getDate();
+  const dayOfTheWeek = currentDate.getDay();
+  const blockchain_timestamp_precision = 1000000; // miliseconds to nanoseconds
 
-  const conditions = [];
-
-  if (
-    params.after_block_timestamp !== undefined &&
-    params.after_block_timestamp > 0
-  ) {
-    conditions.push(
-      sql`transactions.block_timestamp >= ${params.after_block_timestamp}`,
-    );
-  }
-
-  if (
-    params.before_block_timestamp !== undefined &&
-    params.before_block_timestamp > 0
-  ) {
-    conditions.push(
-      sql`transactions.block_timestamp <= ${params.before_block_timestamp}`,
-    );
-  }
+  const startOfWeek = new Date().setDate(today - (dayOfTheWeek || 7));
+  const startOfWeekTimeStamp = new Date(startOfWeek).getTime() * blockchain_timestamp_precision;
+  const currentDateTimeStamp = currentDate.getTime() * blockchain_timestamp_precision;
 
   return sql`
     select
@@ -29,10 +17,14 @@ export default (params: Params) => {
       count(1) as number_of_transactions
     from
       transactions 
-    where ${sql.join(conditions, sql` and `)}
+    where 
+      block_timestamp >= ${startOfWeekTimeStamp}
+      and block_timestamp <= ${currentDateTimeStamp}
     group by
       signer_account_id
-    ${params.limit !== undefined ? sql`limit ${params.limit}` : sql`limit 5`}
-    ${params.offset !== undefined ? sql`offset ${params.offset}` : sql``}
+    order by number_of_transactions desc
+    -- currently, we limit this to only the top 5 but once new requirements come in, this should be revisited
+    -- another reason why we hardcode this is to prevent curious people from overworking the mainnet explorer database and bring it down
+    limit 5
   `;
 }

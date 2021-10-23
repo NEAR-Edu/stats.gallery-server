@@ -152,7 +152,8 @@ export default [
     poll: 1 * HOUR,
   },
   {
-    path: 'top-weekly',
-    query: mostActiveWalletSql
+    path: 'transactions/top-range',
+    query: mostActiveWalletSql,
+    poll: 15 * MINUTE,
   }
 ];
