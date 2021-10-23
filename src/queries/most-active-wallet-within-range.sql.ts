@@ -1,5 +1,4 @@
 import { sql } from 'slonik';
-import { Params } from './Params';
 
 export default () => {
   const currentDate = new Date();
