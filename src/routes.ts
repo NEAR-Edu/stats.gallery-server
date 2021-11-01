@@ -1,4 +1,3 @@
-import { DateTime } from 'luxon';
 import accessKeysSql from './queries/access-keys.sql';
 import accountActivityDistributionSql from './queries/account-activity-distribution.sql';
 import accountCreationSql from './queries/account-creation.sql';
@@ -155,10 +154,10 @@ export default [
   {
     path: 'leaderboard-transactions-week',
     query: () => {
-      const oneWeekAgo =
-        DateTime.now().minus({ weeks: 1 }).toMillis() * 1_000_000;
+      const oneWeekAgo = Date.now() - DAY * 7;
+
       return mostActiveWalletSql({
-        after_block_timestamp: oneWeekAgo,
+        after_block_timestamp: oneWeekAgo * 1_000_000,
       });
     },
     poll: 15 * MINUTE,
