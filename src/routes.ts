@@ -1,3 +1,4 @@
+import { DateTime } from 'luxon';
 import accessKeysSql from './queries/access-keys.sql';
 import accountActivityDistributionSql from './queries/account-activity-distribution.sql';
 import accountCreationSql from './queries/account-creation.sql';
@@ -14,6 +15,7 @@ import distinctReceiversSql from './queries/distinct-receivers.sql';
 import distinctSendersSql from './queries/distinct-senders.sql';
 import gasSpentSql from './queries/gas-spent.sql';
 import gasTokensSpentSql from './queries/gas-tokens-spent.sql';
+import mostActiveWalletSql from './queries/most-active-wallet-within-range.sql';
 import newAccountsCountSql from './queries/new-accounts-count.sql';
 import newAccountsListSql from './queries/new-accounts-list.sql';
 import receivedTransactionCountSql from './queries/received-transaction-count.sql';
@@ -149,5 +151,16 @@ export default [
     query: leaderboardScoreSql,
     db: 'cache',
     poll: 1 * HOUR,
+  },
+  {
+    path: 'leaderboard-transactions-week',
+    query: () => {
+      const oneWeekAgo =
+        DateTime.now().minus({ weeks: 1 }).toMillis() * 1_000_000;
+      return mostActiveWalletSql({
+        after_block_timestamp: oneWeekAgo,
+      });
+    },
+    poll: 15 * MINUTE,
   },
 ];
