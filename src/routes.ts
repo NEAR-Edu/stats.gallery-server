@@ -14,6 +14,7 @@ import distinctReceiversSql from './queries/distinct-receivers.sql';
 import distinctSendersSql from './queries/distinct-senders.sql';
 import gasSpentSql from './queries/gas-spent.sql';
 import gasTokensSpentSql from './queries/gas-tokens-spent.sql';
+import mostActiveWalletSql from './queries/most-active-wallet-within-range.sql';
 import newAccountsCountSql from './queries/new-accounts-count.sql';
 import newAccountsListSql from './queries/new-accounts-list.sql';
 import receivedTransactionCountSql from './queries/received-transaction-count.sql';
@@ -149,5 +150,16 @@ export default [
     query: leaderboardScoreSql,
     db: 'cache',
     poll: 1 * HOUR,
+  },
+  {
+    path: 'leaderboard-transactions-week',
+    query: () => {
+      const oneWeekAgo = Date.now() - DAY * 7;
+
+      return mostActiveWalletSql({
+        after_block_timestamp: oneWeekAgo * 1_000_000,
+      });
+    },
+    poll: 15 * MINUTE,
   },
 ];
