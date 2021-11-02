@@ -1,5 +1,6 @@
 import { DatabasePoolType } from 'slonik';
 import { LeaderboardCache } from './leaderboards';
+import RarityFractionUpdater from './rarityFranction';
 
 export interface CronsSpec {
   environment: Record<string, string>;
@@ -16,5 +17,7 @@ export default function initCrons(spec: CronsSpec) {
     environment,
   );
 
-  return [leaderboardCache];
+  const rarityFractionCache = RarityFractionUpdater({ localCachePool: cachePool, indexerCachePool: indexerPool })
+
+  return [leaderboardCache, rarityFractionCache];
 }
