@@ -1,5 +1,6 @@
 alter table last_update
-  add column cron_name text unique;
+  add column cron_name text unique,
+  add column block_timestamp numeric(20,0);
 
 -- add name to the existing only column: accounts cache
 update last_update set cron_name = 'ACCOUNTS_CACHE';
