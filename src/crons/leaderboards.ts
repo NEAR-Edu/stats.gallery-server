@@ -17,6 +17,8 @@ export interface AccountRecord {
   modified: number;
 }
 
+const accountsCacheString = 'ACCOUNTS_CACHE';
+
 export class LeaderboardCache implements CronJob {
   /** Is the runner running? Used to prevent spawning duplicate runners */
   private running = false;
@@ -95,7 +97,7 @@ export class LeaderboardCache implements CronJob {
   async queryLastUpdateBlockHeightFromCache(): Promise<number> {
     try {
       const res = await this.cachePool.oneFirst(sql`
-        select block_height from last_update
+        select block_height from last_update where cron_name = ${accountsCacheString}
       `);
       return res as number;
     } catch (err) {
@@ -142,7 +144,7 @@ export class LeaderboardCache implements CronJob {
   writeLastUpdateBlockHeight(lastUpdateBlockHeight: number) {
     return this.cachePool.query(sql`
       -- single row table, so no where clause necessary
-      update last_update set block_height = ${lastUpdateBlockHeight}
+      update last_update set block_height = ${lastUpdateBlockHeight} where cron_name = ${accountsCacheString}
     `);
   }
 
