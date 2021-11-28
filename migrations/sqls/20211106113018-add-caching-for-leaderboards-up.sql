@@ -3,7 +3,7 @@ alter table last_update
   add column block_timestamp numeric(20,0);
 
 -- add name to the existing only column: accounts cache
-update last_update set cron_name = 'ACCOUNTS_CACHE';
+update last_update set cron_name = 'ACCOUNTS_CACHE' where block_height > 0;
 
 create type execution_outcome_status as ENUM (
   'UNKNOWN',
