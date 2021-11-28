@@ -1,5 +1,6 @@
 import { DatabasePoolType } from 'slonik';
 import { LeaderboardCache } from './leaderboards';
+import OnChainTransactionsCache from './onChainTransactions';
 
 export interface CronsSpec {
   environment: Record<string, string>;
@@ -16,5 +17,11 @@ export default function initCrons(spec: CronsSpec) {
     environment,
   );
 
-  return [leaderboardCache];
+  const onChainTransactions = OnChainTransactionsCache({
+    localCachePool: cachePool,
+    indexerCachepool: indexerPool,
+    environment: environment,
+  })
+
+  return [leaderboardCache, onChainTransactions];
 }

@@ -12,7 +12,8 @@
     "build:prod": "cross-env NODE_ENV=production node ./build.js",
     "dev": "npm run check && npm run clean && npm run build",
     "prod": "npm run check && npm run clean && npm run build:prod",
-    "start": "node -r dotenv/config dist/index.js"
+    "start": "node -r dotenv/config dist/index.js",
+    "migrate": "node_modules/db-migrate/bin/db-migrate up"
   },
   "author": "Jacob Lindahl <jacob@near.foundation>",
   "license": "GPL-3.0-only",
@@ -24,13 +25,14 @@
     "koa": "^2.13.1",
     "near-api-js": "^0.43.1",
     "node-cron": "^3.0.0",
-    "slonik": "^23.8.0"
+    "slonik": "^25.0.0"
   },
   "devDependencies": {
     "@types/koa": "^2.13.4",
     "@types/koa__cors": "^3.0.3",
     "@types/koa__router": "^8.0.8",
     "@types/node-cron": "^3.0.0",
+    "@types/pg": "^8.6.1",
     "cross-env": "^7.0.3",
     "db-migrate": "^1.0.0-beta.16",
     "db-migrate-pg": "^1.2.2",

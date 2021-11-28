@@ -1,4 +1,4 @@
-import { DatabasePoolType, sql } from "slonik";
+import { DatabasePoolType, sql, NotFoundError } from "slonik";
 import { CronJob } from './CronJob';
 import { DAY } from '../utils/constants';
 
@@ -34,20 +34,25 @@ export default (spec: OnChainTransactionsCacheSpec): CronJob => {
     // STEP 1: determine the starting epoch — if this is the first time for the job to run, create a new entry
     let firstRun = false;
     const startEpoch = await (async (): Promise<number> => {
-      const lastUpdate = await localCachePool.oneFirst(sql`
-        select block_timestamp from last_update where cron_name = ${cronName}
-      `) as number;
+      let lastUpdate:number;
+      try {
+        lastUpdate = await localCachePool.oneFirst(sql`
+          select block_timestamp from last_update where cron_name = ${cronName}
+        `) as number;
+      } catch (error) {
+        if (error instanceof NotFoundError) {
+          const lastSevenDays = Date.now() - DAY * 7;
+          const lastSevenDaysEpoch = lastSevenDays * 1_000_000;
+  
+          await localCachePool.query(sql`
+            insert into last_update (block_height, cron_name, block_timestamp) 
+              values (${null}, ${cronName}, ${lastSevenDaysEpoch})
+          `);
+          firstRun = true;
+          return lastSevenDaysEpoch;
+        }
 
-      if (lastUpdate === null) {
-        const lastSevenDays = Date.now() - DAY * 7;
-        const lastSevenDaysEpoch = lastSevenDays * 1_000_000;
-
-        await localCachePool.query(sql`
-          insert into last_update (block_height, cron_name, block_timestamp) 
-            values (${null}, ${cronName}, ${lastSevenDaysEpoch})
-        `);
-        firstRun = true;
-        return lastSevenDaysEpoch;
+        throw error
       }
 
       return lastUpdate;
@@ -75,7 +80,7 @@ export default (spec: OnChainTransactionsCacheSpec): CronJob => {
   return Object.freeze({
     isEnabled: true,
     cronName,
-    schedule: '*/10 * * * *', // every 10 minutes,
+    schedule: '*/1 * * * *', // every 10 minutes,
     run
   })
 }
