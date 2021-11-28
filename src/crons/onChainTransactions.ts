@@ -33,7 +33,7 @@ export default (spec: OnChainTransactionsCacheSpec): CronJob => {
   const run = async () => {
     // STEP 1: determine the starting epoch — if this is the first time for the job to run, create a new entry
     let firstRun = false;
-    const startEpoch = await (async () => {
+    const startEpoch = await (async (): Promise<number> => {
       const lastUpdate = await localCachePool.oneFirst(sql`
         select block_timestamp from last_update where cron_name = ${cronName}
       `) as number;
@@ -50,7 +50,7 @@ export default (spec: OnChainTransactionsCacheSpec): CronJob => {
         return lastSevenDaysEpoch;
       }
 
-      return startEpoch;
+      return lastUpdate;
     })();
 
     // exclude all the columns that were not part of the local cache schema
@@ -70,7 +70,6 @@ export default (spec: OnChainTransactionsCacheSpec): CronJob => {
     const lastTxn = cacheTxns[cacheTxns.length];
     const lastBlockTimestamp = lastTxn.block_timestamp as number;
     await localCachePool.query(sql`update last_update set block_timestamp = ${lastBlockTimestamp}`);
-
   }
 
   return Object.freeze({

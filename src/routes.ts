@@ -25,11 +25,7 @@ import sentTransactionCountSql from './queries/sent-transaction-count.sql';
 import topAccountsSql from './queries/top-accounts.sql';
 import totalReceivedSql from './queries/total-received.sql';
 import totalSentSql from './queries/total-sent.sql';
-
-const SECOND = 1000,
-  MINUTE = 60 * SECOND,
-  HOUR = 60 * MINUTE,
-  DAY = 24 * HOUR;
+import { MINUTE, DAY, HOUR } from './utils/constants';
 
 export default [
   {
