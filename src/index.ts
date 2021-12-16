@@ -1,3 +1,4 @@
+import methodUsageSql from './queries/method-usage.sql';
 import cors from '@koa/cors';
 import Router from '@koa/router';
 import Koa from 'koa';
@@ -95,6 +96,20 @@ endpoints.forEach(async (endpoint, i) => {
           ctx.response.status = 500;
         }
       });
+    }
+  });
+
+  router.get('/method-usage', async (ctx, next) => {
+    console.log('Request', ctx.request.url);
+    try {
+      const result = await retry(() =>
+        pool.any(methodUsageSql(ctx.query as any)),
+      );
+
+      ctx.response.body = result;
+    } catch (e) {
+      console.log(e);
+      ctx.response.status = 500;
     }
   });
 
