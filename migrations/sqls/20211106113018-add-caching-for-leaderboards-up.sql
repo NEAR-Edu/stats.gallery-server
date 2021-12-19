@@ -13,7 +13,7 @@ create type execution_outcome_status as ENUM (
 );
 
 create table on_chain_transaction (
-  transaction_hash text not null primary key,
+  transaction_hash text not null,
   index_in_chunk int4 not null,
   block_timestamp numeric(20,0) not null,
   signer_account_id text not null,

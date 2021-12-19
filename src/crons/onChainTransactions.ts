@@ -1,6 +1,6 @@
-import { DatabasePoolType, sql, NotFoundError } from "slonik";
+import { DatabasePoolType, sql, NotFoundError, QueryResultType } from "slonik";
 import { CronJob } from './CronJob';
-import { DAY } from '../utils/constants';
+import { DAY, MINUTE } from '../utils/constants';
 
 type OnChainTransactionsCacheSpec = {
   localCachePool: DatabasePoolType,
@@ -20,11 +20,12 @@ interface txnProps {
   receiver_account_id: string,
   signature: string,
   status: string,
+  converted_into_receipt_id: string,
   receipt_conversion_gas_burnt: number,
   receipt_conversion_tokens_burnt: number,
 }
 
-type localCacheTxn = Omit<txnProps, "included_in_block_hash" | "included_in_chunk_hash">
+type localCacheTxn = Omit<txnProps, "included_in_block_hash" | "included_in_chunk_hash" | "converted_into_receipt_id">
 
 export default (spec: OnChainTransactionsCacheSpec): CronJob => {
   const { localCachePool, indexerCachepool } = spec;
@@ -58,23 +59,66 @@ export default (spec: OnChainTransactionsCacheSpec): CronJob => {
       return lastUpdate;
     })();
 
+    console.log("startEpoch", startEpoch)
+
     // exclude all the columns that were not part of the local cache schema
     // TODO: make the unnest clearer
-    const txns = await indexerCachepool.many(sql`
-      select * from transactions where block_timestamp >= ${startEpoch}
-    `);
-    const cacheTxns = txns.map(tx => tx as unknown as localCacheTxn) as readonly any[];
-    await localCachePool.query(sql`
-      insert into 
-        on_chain_transactions
-      values
-        (${sql.unnest(cacheTxns, ['string', 'number', 'number', 'string', 'string', 'number', 'string', 'string', 'string', 'number', 'number'])})
-    `)
+    const endEpoch:number = startEpoch + (MINUTE * 30 * 1_000_000)
+    console.log("endEpoch", endEpoch)
+    indexerCachepool.transaction(async (txConnection) => {
+      const txns = await txConnection.many(sql`
+        select
+          transaction_hash,
+          index_in_chunk,
+          block_timestamp,
+          signer_account_id,
+          signer_public_key,
+          nonce,
+          receiver_account_id,
+          signature,
+          status,
+          receipt_conversion_gas_burnt,
+          receipt_conversion_tokens_burnt
+        from
+          transactions
+        where
+          block_timestamp > ${startEpoch} and block_timestamp <= ${endEpoch}
+      `);
+      // return early since there's no on chain tx to process
+      if (!txns) {
+        return
+      }
+      const cacheTxns = txns.map(tx => Object.values(tx)) as readonly any[];
 
-    // update the last_update table
-    const lastTxn = cacheTxns[cacheTxns.length];
-    const lastBlockTimestamp = lastTxn.block_timestamp as number;
-    await localCachePool.query(sql`update last_update set block_timestamp = ${lastBlockTimestamp}`);
+      localCachePool.transaction(async (localTxConn) => {
+        await localTxConn.query(sql`
+          insert into 
+            on_chain_transaction
+          (
+            ${sql`transaction_hash,`}
+            ${sql`index_in_chunk,`}
+            ${sql`block_timestamp,`}
+            ${sql`signer_account_id,`}
+            ${sql`signer_public_key,`}
+            ${sql`nonce,`}
+            ${sql`receiver_account_id,`}
+            ${sql`signature,`}
+            ${sql`status,`}
+            ${sql`receipt_conversion_gas_burnt,`}
+            ${sql`receipt_conversion_tokens_burnt`}
+          )
+          select * from
+            ${sql.unnest(cacheTxns, ['text', 'int4', 'numeric', 'text', 'text', 'numeric', 'text', 'text', 'execution_outcome_status', 'numeric', 'numeric'])}
+          returning *
+        `)
+    
+        // update the last_update table
+        const lastTxn = txns[txns.length - 1] as localCacheTxn;
+        const lastBlockTimestamp = lastTxn.block_timestamp as number;
+        await localTxConn.query(sql`update last_update set block_timestamp = ${lastBlockTimestamp} where cron_name = ${cronName}`);
+
+      });
+    });
   }
 
   return Object.freeze({
