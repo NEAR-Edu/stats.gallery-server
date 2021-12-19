@@ -1,7 +1,7 @@
 import { sql } from 'slonik';
 import { TimestampRange } from './Params';
 
-export default (range: TimestampRange) => {
+export default (range: TimestampRange, limit: number) => {
   const conditions = [];
 
   if (
@@ -35,6 +35,6 @@ export default (range: TimestampRange) => {
     group by
       signer_account_id
     order by number_of_transactions desc
-    limit 15
+    limit ${limit}
   `;
 };

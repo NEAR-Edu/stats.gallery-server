@@ -9,6 +9,7 @@ import poll from './poll';
 import { Params } from './queries/Params';
 import routes from './routes';
 import retry from './utils/retry';
+import { createClient, RedisClientType } from "redis"
 
 const app = new Koa();
 const port = process.env['PORT'] || 3000;
@@ -53,6 +54,10 @@ endpoints.forEach(async (endpoint, i) => {
 
   console.log('Pool test:', await pool.one(sql`select 1`));
 
+  const redis = createClient({ url: process.env['REDIS_URL'] });
+  redis.on('error', (err) => console.log('Redis Client Error', err));
+  await redis.connect();
+
   routes.forEach(route => {
     const routePool = route.db === 'cache' ? cachePool : pool;
 
@@ -66,8 +71,19 @@ endpoints.forEach(async (endpoint, i) => {
       router.get('/' + route.path, async (ctx, next) => {
         console.log('Request', ctx.request.url);
         try {
-          const result = await call();
-          // console.log('Response', result);
+
+          let result: any = [];
+          if (route.cacheReadThrough) {
+            result = await route.cacheReadThrough(redis as RedisClientType);
+            result = JSON.parse(result);
+          }
+
+          if (result === null || result.length === 0) {
+            result = await call();
+            if (route.preReturnProcessor) {
+              result = await route.preReturnProcessor(result, redis as RedisClientType);
+            }
+          }
 
           ctx.response.body = result;
         } catch (e) {
