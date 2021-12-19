@@ -9,7 +9,7 @@ export default (range: TimestampRange) => {
     range.after_block_timestamp > 0
   ) {
     conditions.push(
-      sql`transactions.block_timestamp >= ${range.after_block_timestamp}`,
+      sql`on_chain_transaction.block_timestamp >= ${range.after_block_timestamp}`,
     );
   }
 
@@ -18,7 +18,7 @@ export default (range: TimestampRange) => {
     range.before_block_timestamp > 0
   ) {
     conditions.push(
-      sql`transactions.block_timestamp <= ${range.before_block_timestamp}`,
+      sql`on_chain_transaction.block_timestamp <= ${range.before_block_timestamp}`,
     );
   }
 
@@ -30,7 +30,7 @@ export default (range: TimestampRange) => {
       signer_account_id as account_id,
       count(1) as number_of_transactions
     from
-      transactions 
+      on_chain_transaction 
     where ${sql.join(conditions, sql` and `)}
     group by
       signer_account_id

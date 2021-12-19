@@ -1,4 +1,4 @@
-import { DatabasePoolType, sql, NotFoundError, QueryResultType } from "slonik";
+import { DatabasePoolType, sql, NotFoundError } from "slonik";
 import { CronJob } from './CronJob';
 import { DAY, MINUTE } from '../utils/constants';
 
@@ -62,7 +62,6 @@ export default (spec: OnChainTransactionsCacheSpec): CronJob => {
     console.log("startEpoch", startEpoch)
 
     // exclude all the columns that were not part of the local cache schema
-    // TODO: make the unnest clearer
     const endEpoch:number = startEpoch + (MINUTE * 30 * 1_000_000)
     console.log("endEpoch", endEpoch)
     indexerCachepool.transaction(async (txConnection) => {

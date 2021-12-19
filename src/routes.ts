@@ -156,6 +156,7 @@ export default [
         after_block_timestamp: oneWeekAgo * 1_000_000,
       });
     },
+    db: 'cache',
     poll: 15 * MINUTE,
   },
 ];
