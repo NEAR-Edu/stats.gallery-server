@@ -1,15 +1,12 @@
-import {
-  DatabasePoolType,
-  sql,
-  TaggedTemplateLiteralInvocationType,
-} from 'slonik';
+import { sql, TaggedTemplateLiteralInvocationType } from 'slonik';
+import { CronJobSpec } from '.';
 import accountCreationSql from '../queries/account-creation.sql';
 import scoreCalculateSql from '../queries/score-calculate.sql';
 import { CronJob } from './CronJob';
 
-export type AccountColumn = 'created_at_block_timestamp' | 'balance' | 'score';
+type AccountColumn = 'created_at_block_timestamp' | 'balance' | 'score';
 
-export interface AccountRecord {
+interface AccountRecord {
   account_id: string;
   balance: string;
   score: number;
@@ -19,40 +16,53 @@ export interface AccountRecord {
 
 const accountsCacheString = 'ACCOUNTS_CACHE';
 
-export class LeaderboardCache implements CronJob {
-  /** Is the runner running? Used to prevent spawning duplicate runners */
-  private running = false;
-  private cols: Map<AccountColumn, (accountId: string) => Promise<any>>;
+export function createCacheJob({
+  cachePool,
+  indexerPool,
+  environment,
+}: CronJobSpec): CronJob {
+  let running = false;
 
-  constructor(
-    private cachePool: DatabasePoolType,
-    private indexerPool: DatabasePoolType,
-    private environment: Record<string, string>,
-  ) {
-    this.cols = new Map();
-
-    this.cols.set('score', this.getAccountScore.bind(this));
-    this.cols.set('balance', this.getAccountBalance.bind(this));
-    this.cols.set(
-      'created_at_block_timestamp',
-      this.getAccountCreated.bind(this),
+  const getAccountScore = async (account: string) => {
+    return await indexerPool.oneFirst(
+      scoreCalculateSql({ account_id: account }),
     );
-  }
+  };
 
-  get isEnabled() {
-    return !this.environment['NO_UPDATE_CACHE'];
-  }
+  const getAccountBalance = async (account: string) => {
+    return await indexerPool.oneFirst(sql`
+      select t_a.affected_account_nonstaked_balance as balance
+      from account_changes t_a
+      left outer join account_changes t_b on t_a.affected_account_id = t_b.affected_account_id
+      and t_a.changed_in_block_timestamp < t_b.changed_in_block_timestamp
+      where t_b.affected_account_id is null
+        and t_a.affected_account_id = ${account}
+        limit 1
+    `);
+  };
 
-  get cronName() {
-    return 'LEADERBOARDCACHE';
-  }
+  const getAccountCreated = async (account: string) => {
+    try {
+      const created = await indexerPool.oneFirst(
+        accountCreationSql({ account_id: account }),
+      );
+      return created;
+    } catch (err) {
+      if (err instanceof Error && err.name === 'NotFoundError') {
+        return null;
+      }
+      throw err;
+    }
+  };
 
-  get schedule() {
-    return '*/10 * * * *'; // every 10 minutes
-  }
+  const columns = new Map<AccountColumn, (accountId: string) => Promise<any>>();
 
-  async queryNewAccountsFromIndexer(sinceBlockHeight: number) {
-    const queryResult = await this.indexerPool.many(sql`
+  columns.set('score', getAccountScore);
+  columns.set('balance', getAccountBalance);
+  columns.set('created_at_block_timestamp', getAccountCreated);
+
+  const queryNewAccountsFromIndexer = async (sinceBlockHeight: number) => {
+    const queryResult = await indexerPool.many(sql`
       select account_id,
         last_update_block_height
       from accounts
@@ -71,13 +81,13 @@ export class LeaderboardCache implements CronJob {
     }
 
     return { accounts, lastUpdateBlockHeight };
-  }
+  };
 
-  async queryStaleAccountsFromCache(
+  const queryStaleAccountsFromCache = async (
     limit = 100,
-  ): Promise<Readonly<AccountRecord>[]> {
+  ): Promise<Readonly<AccountRecord>[]> => {
     try {
-      return (await this.cachePool.many(sql`
+      return (await cachePool.many(sql`
         select
           account_id,
           balance::text,
@@ -92,21 +102,21 @@ export class LeaderboardCache implements CronJob {
       // not yet initialized
       return [];
     }
-  }
+  };
 
-  async queryLastUpdateBlockHeightFromCache(): Promise<number> {
+  const queryLastUpdateBlockHeightFromCache = async (): Promise<number> => {
     try {
-      const res = await this.cachePool.oneFirst(sql`
+      const res = await cachePool.oneFirst(sql`
         select block_height from last_update where cron_name = ${accountsCacheString}
       `);
       return res as number;
     } catch (err) {
       return 0;
     }
-  }
+  };
 
-  writeAccountIds(accounts: string[]) {
-    return this.cachePool.connect(async connection => {
+  const writeAccountIds = (accounts: string[]) => {
+    return cachePool.connect(async connection => {
       const groups = [];
       const size = 100;
       const l = Array.from(accounts);
@@ -139,66 +149,34 @@ export class LeaderboardCache implements CronJob {
         drop table new_account_id;
       `);
     });
-  }
+  };
 
-  writeLastUpdateBlockHeight(lastUpdateBlockHeight: number) {
-    return this.cachePool.query(sql`
+  const writeLastUpdateBlockHeight = (lastUpdateBlockHeight: number) => {
+    return cachePool.query(sql`
       -- single row table, so no where clause necessary
       update last_update set block_height = ${lastUpdateBlockHeight} where cron_name = ${accountsCacheString}
     `);
-  }
+  };
 
-  async loadAccounts() {
+  const loadAccounts = async () => {
     const cachedLastUpdateBlockHeight =
-      await this.queryLastUpdateBlockHeightFromCache();
+      await queryLastUpdateBlockHeightFromCache();
 
     const { accounts: newAccounts, lastUpdateBlockHeight } =
-      await this.queryNewAccountsFromIndexer(cachedLastUpdateBlockHeight);
+      await queryNewAccountsFromIndexer(cachedLastUpdateBlockHeight);
 
     return {
       newAccounts,
       lastUpdateBlockHeight,
     };
-  }
+  };
 
-  async getAccountScore(account: string) {
-    return await this.indexerPool.oneFirst(
-      scoreCalculateSql({ account_id: account }),
-    );
-  }
-
-  async getAccountBalance(account: string) {
-    return await this.indexerPool.oneFirst(sql`
-      select t_a.affected_account_nonstaked_balance as balance
-      from account_changes t_a
-      left outer join account_changes t_b on t_a.affected_account_id = t_b.affected_account_id
-      and t_a.changed_in_block_timestamp < t_b.changed_in_block_timestamp
-      where t_b.affected_account_id is null
-        and t_a.affected_account_id = ${account}
-        limit 1
-    `);
-  }
-
-  async getAccountCreated(account: string) {
-    try {
-      const created = await this.indexerPool.oneFirst(
-        accountCreationSql({ account_id: account }),
-      );
-      return created;
-    } catch (err) {
-      if (err instanceof Error && err.name === 'NotFoundError') {
-        return null;
-      }
-      throw err;
-    }
-  }
-
-  queryAccountsWithNullsFromCache(): Promise<
+  const queryAccountsWithNullsFromCache = (): Promise<
     Readonly<{ account_id: string; missing_columns: string }>[]
-  > {
-    const colNames = Array.from(this.cols.keys());
+  > => {
+    const colNames = Array.from(columns.keys());
 
-    return this.cachePool.many(sql`
+    return cachePool.many(sql`
       select account_id, concat(
         ${sql.join(
           colNames.map(
@@ -216,13 +194,16 @@ export class LeaderboardCache implements CronJob {
         sql` or `,
       )}
     `) as Promise<Readonly<{ account_id: string; missing_columns: string }>[]>;
-  }
+  };
 
-  async updateAccount(accountId: string, columnsToUpdate: AccountColumn[]) {
+  const updateAccount = async (
+    accountId: string,
+    columnsToUpdate: AccountColumn[],
+  ) => {
     let promises: Promise<any>[] = [];
     let sets: TaggedTemplateLiteralInvocationType[] = [];
 
-    this.cols.forEach((getter, colName) => {
+    columns.forEach((getter, colName) => {
       if (columnsToUpdate.includes(colName as AccountColumn)) {
         promises.push(
           getter(accountId)
@@ -240,7 +221,7 @@ export class LeaderboardCache implements CronJob {
     await Promise.all(promises);
 
     if (sets.length) {
-      return this.cachePool.query(sql`
+      return cachePool.query(sql`
         update account
           set ${sql.join(sets, sql`, `)}
           where account_id = ${accountId}
@@ -248,30 +229,30 @@ export class LeaderboardCache implements CronJob {
     } else {
       return Promise.reject('No updates procured');
     }
-  }
+  };
 
-  async run() {
+  const run = async () => {
     // Don't allow cron to spawn more than one runner at a time
-    if (this.running) {
+    if (running) {
       console.log('Attempted to spawn duplicate cache updater, returning');
       return;
     }
-    this.running = true;
+    running = true;
 
     console.log('Loading accounts...');
-    const { newAccounts, lastUpdateBlockHeight } = await this.loadAccounts();
+    const { newAccounts, lastUpdateBlockHeight } = await loadAccounts();
     console.log('Done loading accounts');
 
     console.log('Writing account ids...');
-    await this.writeAccountIds(newAccounts);
+    await writeAccountIds(newAccounts);
     console.log('Done writing account ids');
 
     console.log('Writing last update block height...');
-    await this.writeLastUpdateBlockHeight(lastUpdateBlockHeight);
+    await writeLastUpdateBlockHeight(lastUpdateBlockHeight);
     console.log('Done writing last update block height');
 
     console.log('Loading accounts with nulls...');
-    const accountsWithNulls = await this.queryAccountsWithNullsFromCache();
+    const accountsWithNulls = await queryAccountsWithNullsFromCache();
     console.log('Done loading accounts with nulls');
 
     console.log(
@@ -290,7 +271,7 @@ export class LeaderboardCache implements CronJob {
 
       await Promise.all(
         accountsWithNulls.slice(i, groupSize).map(record =>
-          this.updateAccount(
+          updateAccount(
             record.account_id,
 
             // Trailing comma means we have an empty element at the end of the
@@ -313,19 +294,18 @@ export class LeaderboardCache implements CronJob {
     while (Date.now() - maxModified > staleTime) {
       console.log('Stale accounts group ' + i);
       console.log('Loading stale accounts...');
-      const staleAccounts = await this.queryStaleAccountsFromCache(10);
+      const staleAccounts = await queryStaleAccountsFromCache(10);
       console.log('Done loading stale accounts');
 
       console.log('Updating ' + staleAccounts.length + ' stale accounts...');
       await Promise.all(
         staleAccounts.map(record => {
           maxModified = Math.max(maxModified, record.modified);
-          return this.updateAccount(record.account_id, [
-            'balance',
-            'score',
-          ]).catch(e => {
-            console.log('Could not update ' + record.account_id, e);
-          });
+          return updateAccount(record.account_id, ['balance', 'score']).catch(
+            e => {
+              console.log('Could not update ' + record.account_id, e);
+            },
+          );
         }),
       );
       console.log('Done updating ' + staleAccounts.length + ' stale accounts');
@@ -337,6 +317,13 @@ export class LeaderboardCache implements CronJob {
 
     console.log('Done writing updates');
 
-    this.running = false;
-  }
+    running = false;
+  };
+
+  return Object.freeze({
+    cronName: 'LEADERBOARDCACHE',
+    isEnabled: !environment['NO_UPDATE_CACHE'],
+    schedule: '*/10 * * * *', // every 10 minutes
+    run,
+  });
 }

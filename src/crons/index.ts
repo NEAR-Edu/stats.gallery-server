@@ -1,21 +1,16 @@
 import { DatabasePoolType } from 'slonik';
-import { LeaderboardCache } from './leaderboards';
+import { CronJob } from './CronJob';
+import { createCacheJob } from './cache';
 import OnChainTransactionsCache from './onChainTransactions';
 
-export interface CronsSpec {
+export interface CronJobSpec {
   environment: Record<string, string>;
   cachePool: DatabasePoolType;
   indexerPool: DatabasePoolType;
 }
 
-export default function initCrons(spec: CronsSpec) {
+export default function initCronJobs(spec: CronJobSpec): CronJob[] {
   const { environment, cachePool, indexerPool } = spec;
-
-  const leaderboardCache = new LeaderboardCache(
-    cachePool,
-    indexerPool,
-    environment,
-  );
 
   const onChainTransactions = OnChainTransactionsCache({
     localCachePool: cachePool,
@@ -23,5 +18,5 @@ export default function initCrons(spec: CronsSpec) {
     environment: environment,
   })
 
-  return [leaderboardCache, onChainTransactions];
+  return [createCacheJob(spec), onChainTransactions];
 }
