@@ -174,7 +174,7 @@ export default [
     cacheReadThrough: async (cache: RedisClientType) => {
       return await cache.get('leaderboard-dapps-week');
     },
-    preReturnProcessor: async (dbResult: QueryResultRowType[] | undefined, cache: RedisClientType) => {
+    preReturnProcessor: async (dbResult: QueryResultRowType[] | undefined, cache: RedisClientType, rpcEndpoint: string) => {
       if (!dbResult) {
         return dbResult;
       }
@@ -183,7 +183,7 @@ export default [
       for await (const acc of dbResult || []) {
         const accID = acc.account_id as string;
         const res = await axios.post(
-          "https://rpc.mainnet.near.org",
+          rpcEndpoint,
           {
             jsonrpc: "2.0",
             id: "stats.gallery",

@@ -9,7 +9,7 @@ import poll from './poll';
 import { Params } from './queries/Params';
 import routes from './routes';
 import retry from './utils/retry';
-import { createClient, RedisClientType } from "redis"
+import { createClient, RedisClientType } from 'redis'
 
 const app = new Koa();
 const port = process.env['PORT'] || 3000;
@@ -70,6 +70,9 @@ endpoints.forEach(async (endpoint, i) => {
 
       router.get('/' + route.path, async (ctx, next) => {
         console.log('Request', ctx.request.url);
+        const networkEnv = ctx.request.url.split('/')[0];
+        const rpcEndpoint = networkEnv.toLowerCase() === 'mainnet' ? 'https://rpc.mainnet.near.org' : 'https://rpc.testnet.near.org';
+
         try {
 
           let result: any = [];
@@ -81,7 +84,7 @@ endpoints.forEach(async (endpoint, i) => {
           if (result === null || result.length === 0) {
             result = await call();
             if (route.preReturnProcessor) {
-              result = await route.preReturnProcessor(result, redis as RedisClientType);
+              result = await route.preReturnProcessor(result, redis as RedisClientType, rpcEndpoint);
             }
           }
 
