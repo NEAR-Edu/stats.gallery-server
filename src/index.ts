@@ -3,7 +3,7 @@ import cors from '@koa/cors';
 import Router from '@koa/router';
 import Koa from 'koa';
 import { schedule } from 'node-cron';
-import { createPool, DatabasePoolType, sql } from 'slonik';
+import { createPool, DatabasePool, sql } from 'slonik';
 import initCronJobs from './crons';
 import { draw } from './image';
 import poll from './poll';
@@ -22,7 +22,7 @@ const index = new Router();
 // Environment variable
 const endpoints = process.env['ENDPOINT']!.split(',').map(s => s.trim());
 const connections = process.env['DB_CONNECTION']!.split(',').map(s => s.trim());
-const pools: DatabasePoolType[] = [];
+const pools: DatabasePool[] = [];
 const cachePool = createPool(process.env['CACHE_DB_CONNECTION']!);
 const indexerDatabaseString = connections[endpoints.indexOf('mainnet')];
 const indexerPool = createPool(indexerDatabaseString);
@@ -49,6 +49,9 @@ endpoints.forEach(async (endpoint, i) => {
 
   const pool = createPool(connection, {
     maximumPoolSize: 31,
+    statementTimeout: 'DISABLE_TIMEOUT',
+    idleTimeout: 'DISABLE_TIMEOUT',
+    idleInTransactionSessionTimeout: 'DISABLE_TIMEOUT',
   });
   pools.push(pool);
 

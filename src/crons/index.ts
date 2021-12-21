@@ -1,11 +1,11 @@
-import { DatabasePoolType } from 'slonik';
+import { DatabasePool } from 'slonik';
 import { CronJob } from './CronJob';
 import { createCacheJob } from './cache';
 
 export interface CronJobSpec {
   environment: Record<string, string>;
-  cachePool: DatabasePoolType;
-  indexerPool: DatabasePoolType;
+  cachePool: DatabasePool;
+  indexerPool: DatabasePool;
 }
 
 export default function initCronJobs(spec: CronJobSpec): CronJob[] {

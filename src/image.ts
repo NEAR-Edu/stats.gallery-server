@@ -1,5 +1,5 @@
 import { createCanvas, loadImage, registerFont } from 'canvas';
-import { DatabasePoolType } from 'slonik';
+import { DatabasePool } from 'slonik';
 import { badges } from './badges';
 import { drawBadge } from './image-renderers/drawBadge';
 import { drawLevel } from './image-renderers/drawLevel';
@@ -29,8 +29,8 @@ const logoPromise = loadImage(require('../assets/img/logo.png'));
 
 export async function draw(
   accountName: string,
-  pool: DatabasePoolType,
-  cachePool: DatabasePoolType,
+  pool: DatabasePool,
+  cachePool: DatabasePool,
 ) {
   const width = 1200;
   const height = 600;

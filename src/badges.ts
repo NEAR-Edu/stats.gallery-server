@@ -1,8 +1,5 @@
 import { Image, loadImage } from 'canvas';
-import {
-  QueryResultRowType,
-  TaggedTemplateLiteralInvocationType,
-} from 'slonik';
+import { QueryResultRow, TaggedTemplateLiteralInvocation } from 'slonik';
 import badgeDeploySql from './queries/badge-deploy.sql';
 import badgeNftSql from './queries/badge-nft.sql';
 import badgeStakeSql from './queries/badge-stake.sql';
@@ -11,9 +8,7 @@ import { Params } from './queries/Params';
 
 export const badges: {
   image: Promise<Image>;
-  call: (
-    params: Params,
-  ) => TaggedTemplateLiteralInvocationType<QueryResultRowType>;
+  call: (params: Params) => TaggedTemplateLiteralInvocation<QueryResultRow>;
 }[] = [
   {
     image: loadImage(require('../assets/img/badge-nft.png')),
