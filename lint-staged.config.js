@@ -1,4 +1,4 @@
 module.exports = {
-  '*': 'prettier --write',
-  '**/*.ts?(x)': () => 'tsc -p tsconfig.json --noEmit',
+  '{**/*.(js|ts),src/**/*}': 'prettier --write',
+  '**/*.ts': () => 'tsc -p tsconfig.json --noEmit',
 };
