@@ -17,7 +17,7 @@ WORKDIR /usr/src/app
 RUN apt-get update || : && apt-get install python3 -y
 # package & production dependencies
 COPY package*.json .env* ./
-RUN npm ci --only=production
+RUN npm ci
 # built version from build container
 COPY --from=build /usr/src/app/dist/* dist/
 
