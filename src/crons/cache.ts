@@ -1,4 +1,4 @@
-import { sql, TaggedTemplateLiteralInvocationType } from 'slonik';
+import { sql, TaggedTemplateLiteralInvocation } from 'slonik';
 import { CronJobSpec } from '.';
 import accountCreationSql from '../queries/account-creation.sql';
 import scoreCalculateSql from '../queries/score-calculate.sql';
@@ -201,7 +201,7 @@ export function createCacheJob({
     columnsToUpdate: AccountColumn[],
   ) => {
     let promises: Promise<any>[] = [];
-    let sets: TaggedTemplateLiteralInvocationType[] = [];
+    let sets: TaggedTemplateLiteralInvocation[] = [];
 
     columns.forEach((getter, colName) => {
       if (columnsToUpdate.includes(colName as AccountColumn)) {
