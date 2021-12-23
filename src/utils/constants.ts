@@ -3,9 +3,4 @@ const SECOND = 1000,
   HOUR = 60 * MINUTE,
   DAY = 24 * HOUR;
 
-export {
-  SECOND,
-  MINUTE,
-  HOUR,
-  DAY
-}
+export { SECOND, MINUTE, HOUR, DAY };

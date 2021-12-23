@@ -27,9 +27,9 @@ import topAccountsSql from './queries/top-accounts.sql';
 import totalReceivedSql from './queries/total-received.sql';
 import totalSentSql from './queries/total-sent.sql';
 import { MINUTE, DAY, HOUR } from './utils/constants';
-import axios from "axios";
+import axios from 'axios';
 import { RedisClientType } from 'redis';
- 
+
 export default [
   {
     path: 'access-keys',
@@ -155,9 +155,12 @@ export default [
     query: () => {
       const oneWeekAgo = Date.now() - DAY * 7;
 
-      return mostActiveWalletSql({
-        after_block_timestamp: oneWeekAgo * 1_000_000,
-      }, 15);
+      return mostActiveWalletSql(
+        {
+          after_block_timestamp: oneWeekAgo * 1_000_000,
+        },
+        15,
+      );
     },
     db: 'cache',
     poll: 15 * MINUTE,
@@ -167,51 +170,64 @@ export default [
     query: () => {
       const oneWeekAgo = Date.now() - DAY * 7;
 
-      return mostActiveWalletSql({
-        after_block_timestamp: oneWeekAgo * 1_000_000,
-      }, 100);
+      return mostActiveWalletSql(
+        {
+          after_block_timestamp: oneWeekAgo * 1_000_000,
+        },
+        100,
+      );
     },
     cacheReadThrough: async (cache: RedisClientType) => {
       return await cache.get('leaderboard-dapps-week');
     },
-    preReturnProcessor: async (dbResult: QueryResultRow[] | undefined, cache: RedisClientType, rpcEndpoint: string) => {
+    preReturnProcessor: async (
+      dbResult: QueryResultRow[] | undefined,
+      cache: RedisClientType,
+      rpcEndpoint: string,
+    ) => {
       if (!dbResult) {
         return dbResult;
       }
-      
+
       const top5: QueryResultRow[] = [];
       for await (const acc of dbResult || []) {
         const accID = acc.account_id as string;
         const res = await axios.post(
           rpcEndpoint,
           {
-            jsonrpc: "2.0",
-            id: "stats.gallery",
-            method: "query",
+            jsonrpc: '2.0',
+            id: 'stats.gallery',
+            method: 'query',
             params: {
-                request_type: "view_account",
-                account_id: accID,
-                finality: "final"
-            }
+              request_type: 'view_account',
+              account_id: accID,
+              finality: 'final',
+            },
           },
           {
-            headers: { "content-type": "application/json" }
-          }
-        )
-        if (res.data.result && res.data.result.code_hash != undefined && res.data.result.code_hash != "11111111111111111111111111111111") {
+            headers: { 'content-type': 'application/json' },
+          },
+        );
+        if (
+          res.data.result &&
+          res.data.result.code_hash != undefined &&
+          res.data.result.code_hash != '11111111111111111111111111111111'
+        ) {
           top5.push(acc);
           if (top5.length >= 5) {
             break;
           }
         }
       }
-      
+
       // expire in 10 minutes
-      await cache.set('leaderboard-dapps-week', JSON.stringify(top5), { EX: 600 })
+      await cache.set('leaderboard-dapps-week', JSON.stringify(top5), {
+        EX: 600,
+      });
 
       return top5;
     },
     db: 'cache',
     poll: 15 * MINUTE,
-  }
+  },
 ];

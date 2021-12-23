@@ -16,7 +16,7 @@ export default function initCronJobs(spec: CronJobSpec): CronJob[] {
     localCachePool: cachePool,
     indexerCachepool: indexerPool,
     environment: environment,
-  })
+  });
 
   return [createCacheJob(spec), onChainTransactions];
 }
