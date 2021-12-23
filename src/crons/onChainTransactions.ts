@@ -141,7 +141,7 @@ export default (spec: OnChainTransactionsCacheSpec): CronJob => {
   return Object.freeze({
     isEnabled: true,
     cronName,
-    schedule: '*/1 * * * *', // every 10 minutes,
+    schedule: '*/1 * * * *', // every 1 minute,
     run,
   });
 };
