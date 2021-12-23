@@ -1,10 +1,10 @@
-import { DatabasePoolType, sql, NotFoundError } from "slonik";
+import { DatabasePool, sql, NotFoundError } from "slonik";
 import { CronJob } from './CronJob';
 import { DAY, MINUTE } from '../utils/constants';
 
 type OnChainTransactionsCacheSpec = {
-  localCachePool: DatabasePoolType,
-  indexerCachepool: DatabasePoolType,
+  localCachePool: DatabasePool,
+  indexerCachepool: DatabasePool,
   environment: Record<string, string>
 }
 

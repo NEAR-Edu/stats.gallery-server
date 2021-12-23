@@ -1,4 +1,4 @@
-import { QueryResultRowType } from 'slonik';
+import { QueryResultRow } from 'slonik';
 import accessKeysSql from './queries/access-keys.sql';
 import accountActivityDistributionSql from './queries/account-activity-distribution.sql';
 import accountCreationSql from './queries/account-creation.sql';
@@ -174,12 +174,12 @@ export default [
     cacheReadThrough: async (cache: RedisClientType) => {
       return await cache.get('leaderboard-dapps-week');
     },
-    preReturnProcessor: async (dbResult: QueryResultRowType[] | undefined, cache: RedisClientType, rpcEndpoint: string) => {
+    preReturnProcessor: async (dbResult: QueryResultRow[] | undefined, cache: RedisClientType, rpcEndpoint: string) => {
       if (!dbResult) {
         return dbResult;
       }
       
-      const top5: QueryResultRowType[] = [];
+      const top5: QueryResultRow[] = [];
       for await (const acc of dbResult || []) {
         const accID = acc.account_id as string;
         const res = await axios.post(
