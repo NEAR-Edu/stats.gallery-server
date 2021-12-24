@@ -2,6 +2,7 @@ import { DatabasePool } from 'slonik';
 import { CronJob } from './CronJob';
 import { createCacheJob } from './cache';
 import OnChainTransactionsCache from './onChainTransactions';
+import TransactionInvalidator from './transactionInvalidator';
 
 export interface CronJobSpec {
   environment: Record<string, string>;
@@ -18,5 +19,9 @@ export default function initCronJobs(spec: CronJobSpec): CronJob[] {
     environment: environment,
   });
 
-  return [createCacheJob(spec), onChainTransactions];
+  const transactionInvalidator = TransactionInvalidator({
+    localCachePool: cachePool,
+  });
+
+  return [createCacheJob(spec), onChainTransactions, transactionInvalidator];
 }
