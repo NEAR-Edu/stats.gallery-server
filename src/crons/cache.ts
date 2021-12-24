@@ -14,6 +14,8 @@ interface AccountRecord {
   modified: number;
 }
 
+const accountsCacheString = 'ACCOUNTS_CACHE';
+
 export function createCacheJob({
   cachePool,
   indexerPool,
@@ -105,7 +107,7 @@ export function createCacheJob({
   const queryLastUpdateBlockHeightFromCache = async (): Promise<number> => {
     try {
       const res = await cachePool.oneFirst(sql`
-        select block_height from last_update
+        select block_height from last_update where cron_name = ${accountsCacheString}
       `);
       return res as number;
     } catch (err) {
@@ -152,7 +154,7 @@ export function createCacheJob({
   const writeLastUpdateBlockHeight = (lastUpdateBlockHeight: number) => {
     return cachePool.query(sql`
       -- single row table, so no where clause necessary
-      update last_update set block_height = ${lastUpdateBlockHeight}
+      update last_update set block_height = ${lastUpdateBlockHeight} where cron_name = ${accountsCacheString}
     `);
   };
 
