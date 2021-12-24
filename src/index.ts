@@ -26,7 +26,11 @@ const connections = process.env['DB_CONNECTION']!.split(',').map(s => s.trim());
 const pools: DatabasePool[] = [];
 const cachePool = createPool(process.env['CACHE_DB_CONNECTION']!);
 const indexerDatabaseString = connections[endpoints.indexOf('mainnet')];
-const indexerPool = createPool(indexerDatabaseString);
+const indexerPool = createPool(indexerDatabaseString, {
+  statementTimeout: 'DISABLE_TIMEOUT',
+  idleTimeout: 'DISABLE_TIMEOUT',
+  idleInTransactionSessionTimeout: 'DISABLE_TIMEOUT',
+});
 
 // Ensure connection pools are closed on exit to avoid memory leaks
 process.on('exit', async () => {
@@ -78,11 +82,7 @@ endpoints.forEach(async (endpoint, i) => {
 
       router.get('/' + route.path, async (ctx, next) => {
         console.log('Request', ctx.request.url);
-        const networkEnv = ctx.request.url.split('/')[0];
-        const rpcEndpoint =
-          networkEnv.toLowerCase() === 'mainnet'
-            ? 'https://rpc.mainnet.near.org'
-            : 'https://rpc.testnet.near.org';
+        const rpcEndpoint = `https://rpc.${endpoint}.near.org`;
 
         try {
           let result: any = [];
