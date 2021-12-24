@@ -13,7 +13,7 @@
     "dev": "npm run check && npm run clean && npm run build",
     "prod": "npm run check && npm run clean && npm run build:prod",
     "start": "node -r dotenv/config dist/index.js",
-    "migrate": "node_modules/db-migrate/bin/db-migrate up"
+    "migrate": "db-migrate up"
   },
   "author": "Jacob Lindahl <jacob@near.foundation>",
   "license": "GPL-3.0-only",
