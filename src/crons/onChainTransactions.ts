@@ -38,7 +38,6 @@ export default (spec: OnChainTransactionsCacheSpec): CronJob => {
 
   const run = async () => {
     // STEP 1: determine the starting epoch — if this is the first time for the job to run, create a new entry
-    let firstRun = false;
     const startEpoch = await (async (): Promise<number> => {
       let lastUpdate: number;
       try {
@@ -54,7 +53,6 @@ export default (spec: OnChainTransactionsCacheSpec): CronJob => {
             insert into last_update (block_height, cron_name, block_timestamp) 
               values (${null}, ${cronName}, ${lastSevenDaysEpoch})
           `);
-          firstRun = true;
           return lastSevenDaysEpoch;
         }
 

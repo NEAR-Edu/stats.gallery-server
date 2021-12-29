@@ -3,6 +3,7 @@ import { CronJob } from './CronJob';
 import { createCacheJob } from './cache';
 import OnChainTransactionsCache from './onChainTransactions';
 import TransactionInvalidator from './transactionInvalidator';
+import AppTransactionReceiptCache from './appActionReceipts';
 
 export interface CronJobSpec {
   environment: Record<string, string>;
@@ -23,5 +24,16 @@ export default function initCronJobs(spec: CronJobSpec): CronJob[] {
     localCachePool: cachePool,
   });
 
-  return [createCacheJob(spec), onChainTransactions, transactionInvalidator];
+  const appReceiptActions = AppTransactionReceiptCache({
+    localCachePool: cachePool,
+    indexerCachepool: indexerPool,
+    environment: environment,
+  });
+
+  return [
+    createCacheJob(spec),
+    onChainTransactions,
+    transactionInvalidator,
+    appReceiptActions,
+  ];
 }
