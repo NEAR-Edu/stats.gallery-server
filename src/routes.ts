@@ -266,7 +266,7 @@ export default [
       }
 
       // expire in 10 minutes
-      await cache.set('leaderboard-dapps-week', JSON.stringify(top5), {
+      await cache.set('leaderboard-nfts-week', JSON.stringify(top5), {
         EX: 600,
       });
 
