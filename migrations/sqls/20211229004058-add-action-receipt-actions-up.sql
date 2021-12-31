@@ -17,9 +17,7 @@ create table action_receipt_action
     args                                jsonb       not null,
     receipt_predecessor_account_id      text        not null,
     receipt_receiver_account_id         text        not null,
-    receipt_included_in_block_timestamp numeric(20) not null,
-    constraint receipt_action_action_pk
-        primary key (receipt_id, index_in_action_receipt)
+    receipt_included_in_block_timestamp numeric(20) not null    
 );
 
 create index action_receipt_action_receipt_included_in_block_timestamp_idx

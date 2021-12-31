@@ -114,7 +114,7 @@ export default (spec: AppActionReceiptsSpec): CronJob => {
       });
     });
 
-    console.log('');
+    console.log('Successfully ran app_action_receipt job.');
   };
 
   return Object.freeze({
