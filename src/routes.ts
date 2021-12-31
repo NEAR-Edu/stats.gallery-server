@@ -232,7 +232,7 @@ export default [
     poll: 15 * MINUTE,
   },
   {
-    path: 'leaderboards-dapps-nft',
+    path: 'leaderboard-nfts-week',
     db: 'cache',
     poll: 15 * MINUTE,
     query: () => {
@@ -246,7 +246,7 @@ export default [
       );
     },
     cacheReadThrough: async (cache: RedisClientType) => {
-      return await cache.get('leaderboards-dapps-nft');
+      return await cache.get('leaderboard-nfts-week');
     },
     preReturnProcessor: async (
       dbResult: QueryResultRow[] | undefined,
