@@ -73,7 +73,7 @@ export default (spec: AppActionReceiptsSpec): CronJob => {
       }
 
       const actionReceiptValues = actionReceipts.map(a => {
-        const v = { ...a, args: JSON.stringify(a) };
+        const v = { ...a, args: JSON.stringify(a.args) };
         return Object.values(v);
       }) as readonly any[];
 
