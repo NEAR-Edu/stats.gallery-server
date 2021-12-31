@@ -12,7 +12,7 @@ interface actionReceiptActionProps {
   receipt_id: string;
   index_in_action_receipt: number;
   action_kind: string;
-  args: Object;
+  args: string;
   receipt_predecessor_account_id: string;
   receipt_receiver_account_id: string;
   receipt_included_in_block_timestamp: number;
@@ -72,14 +72,15 @@ export default (spec: AppActionReceiptsSpec): CronJob => {
         return;
       }
 
-      const actionReceiptValues = actionReceipts.map(a =>
-        Object.values(a),
-      ) as readonly any[];
+      const actionReceiptValues = actionReceipts.map(a => {
+        const v = { ...a, args: JSON.stringify(a) };
+        return Object.values(v);
+      }) as readonly any[];
 
       localCachePool.transaction(async localTxConn => {
         await localTxConn.query(sql`
           insert into
-            action_receipt_actions
+            action_receipt_action
           (
             ${sql`receipt_id,`}
             ${sql`index_in_action_receipt,`}
@@ -87,18 +88,19 @@ export default (spec: AppActionReceiptsSpec): CronJob => {
             ${sql`args,`}
             ${sql`receipt_predecessor_account_id,`}
             ${sql`receipt_receiver_account_id,`}
-            ${sql`receipt_included_in_block_timestamp,`}
+            ${sql`receipt_included_in_block_timestamp`}
           )
           select * from
             ${sql.unnest(actionReceiptValues, [
               'text',
-              'integer',
+              'int4',
               'action_kind',
               'jsonb',
               'text',
               'text',
               'numeric',
             ])}
+          returning *
         `);
 
         const lastActionReceipt = actionReceipts[

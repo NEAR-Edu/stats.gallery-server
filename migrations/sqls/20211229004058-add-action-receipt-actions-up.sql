@@ -1,4 +1,4 @@
-create type public.action_kind as enum (
+create type action_kind as enum (
     'CREATE_ACCOUNT',
     'DEPLOY_CONTRACT',
     'FUNCTION_CALL',
