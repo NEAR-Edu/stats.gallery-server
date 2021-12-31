@@ -16,7 +16,7 @@ export default (spec: TransactionInvalidatorCacheSpec): CronJob => {
     const lastSevenDaysEpoch = lastSevenDays * 1_000_000;
 
     const res = await localCachePool.query(sql`
-      delete from action_receipt_action where block_timestamp < ${lastSevenDaysEpoch}
+      delete from action_receipt_action where receipt_included_in_block_timestamp < ${lastSevenDaysEpoch}
     `);
 
     console.log('successfully deleted action_receipt_action', res);
@@ -25,7 +25,7 @@ export default (spec: TransactionInvalidatorCacheSpec): CronJob => {
   return Object.freeze({
     isEnabled: true,
     cronName,
-    schedule: '*/1 * * * *', // every day
+    schedule: '0 0 * * *', // every day
     run,
   });
 };
