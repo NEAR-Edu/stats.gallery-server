@@ -1,23 +1,38 @@
-import { DatabasePoolType } from 'slonik';
-import { LeaderboardCache } from './leaderboards';
+import { DatabasePool } from 'slonik';
+import { CronJob } from './CronJob';
+import { createCacheJob } from './cache';
+import OnChainTransactionsCache from './onChainTransactions';
+import TransactionInvalidator from './transactionInvalidator';
 import RarityFractionUpdater from './rarityFranction';
 
-export interface CronsSpec {
+export interface CronJobSpec {
   environment: Record<string, string>;
-  cachePool: DatabasePoolType;
-  indexerPool: DatabasePoolType;
+  cachePool: DatabasePool;
+  indexerPool: DatabasePool;
 }
 
-export default function initCrons(spec: CronsSpec) {
+export default function initCronJobs(spec: CronJobSpec): CronJob[] {
   const { environment, cachePool, indexerPool } = spec;
 
-  const leaderboardCache = new LeaderboardCache(
-    cachePool,
-    indexerPool,
-    environment,
-  );
+  const onChainTransactions = OnChainTransactionsCache({
+    localCachePool: cachePool,
+    indexerCachepool: indexerPool,
+    environment: environment,
+  });
 
-  const rarityFractionCache = RarityFractionUpdater({ localCachePool: cachePool, indexerCachePool: indexerPool })
+  const transactionInvalidator = TransactionInvalidator({
+    localCachePool: cachePool,
+  });
 
-  return [leaderboardCache, rarityFractionCache];
+  const rarityFractionCache = RarityFractionUpdater({
+    localCachePool: cachePool,
+    indexerCachePool: indexerPool,
+  });
+
+  return [
+    createCacheJob(spec),
+    onChainTransactions,
+    transactionInvalidator,
+    rarityFractionCache,
+  ];
 }

@@ -22,7 +22,7 @@ exports.up = function (db) {
   var filePath = path.join(
     __dirname,
     'sqls',
-    '20211017120050-add-badge-caching-up.sql',
+    '20211106113018-add-caching-for-leaderboards-up.sql',
   );
   return new Promise(function (resolve, reject) {
     fs.readFile(filePath, { encoding: 'utf-8' }, function (err, data) {
@@ -40,7 +40,7 @@ exports.down = function (db) {
   var filePath = path.join(
     __dirname,
     'sqls',
-    '20211017120050-add-badge-caching-down.sql',
+    '20211106113018-add-caching-for-leaderboards-down.sql',
   );
   return new Promise(function (resolve, reject) {
     fs.readFile(filePath, { encoding: 'utf-8' }, function (err, data) {
