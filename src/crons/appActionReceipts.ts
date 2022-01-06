@@ -73,8 +73,15 @@ export default (spec: AppActionReceiptsSpec): CronJob => {
       }
 
       const actionReceiptValues = actionReceipts.map(a => {
-        const v = { ...a, args: JSON.stringify(a.args) };
-        return Object.values(v);
+        return [
+          a.receipt_id,
+          a.index_in_action_receipt,
+          a.action_kind,
+          JSON.stringify(a.args),
+          a.receipt_predecessor_account_id,
+          a.receipt_receiver_account_id,
+          a.receipt_included_in_block_timestamp,
+        ];
       }) as readonly any[];
 
       localCachePool.transaction(async localTxConn => {
