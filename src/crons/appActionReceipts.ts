@@ -8,7 +8,7 @@ type AppActionReceiptsSpec = {
   environment: Record<string, string>;
 };
 
-interface actionReceiptActionProps {
+interface ActionReceiptActionProps {
   receipt_id: string;
   index_in_action_receipt: number;
   action_kind: string;
@@ -112,7 +112,7 @@ export default (spec: AppActionReceiptsSpec): CronJob => {
 
         const lastActionReceipt = actionReceipts[
           actionReceipts.length - 1
-        ] as unknown as actionReceiptActionProps;
+        ] as unknown as ActionReceiptActionProps;
         const lastBlockTimeStamp =
           lastActionReceipt.receipt_included_in_block_timestamp;
         await localTxConn.query(
