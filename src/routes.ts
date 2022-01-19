@@ -16,6 +16,7 @@ import distinctSendersSql from './queries/distinct-senders.sql';
 import gasSpentSql from './queries/gas-spent.sql';
 import gasTokensSpentSql from './queries/gas-tokens-spent.sql';
 import mostActiveWalletSql from './queries/most-active-wallet-within-range.sql';
+import mostActiveNftSql from './queries/most-active-nft-within-range.sql';
 import newAccountsCountSql from './queries/new-accounts-count.sql';
 import newAccountsListSql from './queries/new-accounts-list.sql';
 import receivedTransactionCountSql from './queries/received-transaction-count.sql';
@@ -229,5 +230,47 @@ export default [
     },
     db: 'cache',
     poll: 15 * MINUTE,
+  },
+  {
+    path: 'leaderboard-nfts-week',
+    db: 'cache',
+    poll: 15 * MINUTE,
+    query: () => {
+      const oneWeekAgo = Date.now() - DAY * 7;
+
+      return mostActiveNftSql(
+        {
+          after_block_timestamp: oneWeekAgo * 1_000_000,
+        },
+        100,
+      );
+    },
+    cacheReadThrough: async (cache: RedisClientType) => {
+      return await cache.get('leaderboard-nfts-week');
+    },
+    preReturnProcessor: async (
+      dbResult: QueryResultRow[] | undefined,
+      cache: RedisClientType,
+      rpcEndpoint: string,
+    ) => {
+      if (!dbResult) {
+        return dbResult;
+      }
+
+      const top5: QueryResultRow[] = [];
+      for (const acc of dbResult || []) {
+        top5.push(acc);
+        if (top5.length >= 5) {
+          break;
+        }
+      }
+
+      // expire in 10 minutes
+      await cache.set('leaderboard-nfts-week', JSON.stringify(top5), {
+        EX: 600,
+      });
+
+      return top5;
+    },
   },
 ];

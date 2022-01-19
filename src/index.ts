@@ -36,6 +36,7 @@ const indexerPool = createPool(indexerDatabaseString, {
 process.on('exit', async () => {
   try {
     await Promise.all([await cachePool.end(), await indexerPool.end()]);
+    console.log('successfully closed database connections');
   } catch (error) {
     console.log('Error closing cache connection pools', error);
   }
