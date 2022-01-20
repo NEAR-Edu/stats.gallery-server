@@ -3,6 +3,7 @@ import { CronJob } from './CronJob';
 import { createCacheJob } from './cache';
 import OnChainTransactionsCache from './onChainTransactions';
 import TransactionInvalidator from './transactionInvalidator';
+import AppActionInvalidator from './appActionReceiptsInvalidator';
 import AppTransactionReceiptCache from './appActionReceipts';
 
 export interface CronJobSpec {
@@ -24,6 +25,10 @@ export default function initCronJobs(spec: CronJobSpec): CronJob[] {
     localCachePool: cachePool,
   });
 
+  const appActionInvalidator = AppActionInvalidator({
+    localCachePool: cachePool,
+  });
+
   const appReceiptActions = AppTransactionReceiptCache({
     localCachePool: cachePool,
     indexerCachepool: indexerPool,
@@ -35,5 +40,6 @@ export default function initCronJobs(spec: CronJobSpec): CronJob[] {
     onChainTransactions,
     transactionInvalidator,
     appReceiptActions,
+    appActionInvalidator,
   ];
 }
