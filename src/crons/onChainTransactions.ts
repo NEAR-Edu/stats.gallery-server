@@ -62,11 +62,11 @@ export default (spec: OnChainTransactionsCacheSpec): CronJob => {
       return lastUpdate;
     })();
 
-    console.log('startEpoch', startEpoch);
+    console.log(`${cronName} startEpoch`, startEpoch);
 
     // exclude all the columns that were not part of the local cache schema
     const endEpoch: number = startEpoch + MINUTE * 30 * 1_000_000;
-    console.log('endEpoch', endEpoch);
+    console.log(`${cronName} endEpoch`, endEpoch);
     indexerCachepool.transaction(async txConnection => {
       const txns = await txConnection.many(sql`
         select
@@ -90,7 +90,21 @@ export default (spec: OnChainTransactionsCacheSpec): CronJob => {
       if (!txns) {
         return;
       }
-      const cacheTxns = txns.map(tx => Object.values(tx)) as readonly any[];
+      const cacheTxns = txns.map(tx => {
+        return [
+          tx.transaction_hash,
+          tx.index_in_chunk,
+          tx.block_timestamp,
+          tx.signer_account_id,
+          tx.signer_public_key,
+          tx.nonce,
+          tx.receiver_account_id,
+          tx.signature,
+          tx.status,
+          tx.receipt_conversion_gas_burnt,
+          tx.receipt_conversion_tokens_burnt,
+        ];
+      }) as readonly any[];
 
       localCachePool.transaction(async localTxConn => {
         await localTxConn.query(sql`
@@ -134,6 +148,8 @@ export default (spec: OnChainTransactionsCacheSpec): CronJob => {
         );
       });
     });
+
+    console.log(`Successfully ran ${cronName.toLowerCase()} job.`);
   };
 
   return Object.freeze({
