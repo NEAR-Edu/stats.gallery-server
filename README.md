@@ -37,6 +37,7 @@ ENDPOINT=<comma-separated list of endpoint names>
 DB_CONNECTION=<comma-separated list of indexer connection strings>
 PORT=<optional, default 3000>
 CACHE_DB_CONNECTION=<cache connection string>
+REDIS_URL=<redis connection string>
 
 # Don't run cache updates, optional
 # NO_UPDATE_CACHE=1
@@ -48,6 +49,7 @@ For example:
 ENDPOINT=mainnet,testnet
 DB_CONNECTION=postgres://user:pass@mainnet_host/db_name,postgres://user:pass@testnet_host/db_name
 CACHE_DB_CONNECTION=postgres://user:pass@cache_host/db_name
+REDIS_URL=redis://host:port
 NO_UPDATE_CACHE=1
 ```
 
