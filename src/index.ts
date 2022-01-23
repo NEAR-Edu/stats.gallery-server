@@ -143,9 +143,13 @@ endpoints.forEach(async (endpoint, i) => {
   });
 
   process.on('exit', async () => {
-    console.log('Ending pool ' + endpoint + '...');
-    await pool.end();
-    console.log('Ended pool ' + endpoint);
+    try {
+      console.log('Ending pool ' + endpoint + '...');
+      await pool.end();
+      console.log('Ended pool ' + endpoint);
+    } catch (error) {
+      console.error('error ending pool', error);
+    }
   });
 
   index.use('/' + endpoints[i], router.routes(), router.allowedMethods());
