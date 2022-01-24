@@ -6,3 +6,7 @@ services:
     build: .
     ports:
       - '3000:3000'
+  redis:
+    image: redis:6.2.6-bullseye
+    ports:
+      - '6379:6379'
