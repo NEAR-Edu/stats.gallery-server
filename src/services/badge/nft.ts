@@ -1,7 +1,7 @@
 import { BadgeService } from './badgeService';
 import { createPool, DatabasePool, sql } from 'slonik';
 import { createClient, RedisClientType } from 'redis';
-import badgeNftSql from '../queries/badge-nft.sql';
+import badgeNftSql from '../../queries/badge-nft.sql';
 
 interface NFTBadgeSpec {
   accountId: string;
