@@ -30,7 +30,7 @@ export default async (spec: NFTControllerSpec): Promise<Router> => {
       );
       ctx.response.body = { result: res };
     } catch (error) {
-      console.error(
+      console.log(
         `something went wrong while fetching user's nft badge eligibility`,
         error,
       );
