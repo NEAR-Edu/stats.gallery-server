@@ -4,6 +4,8 @@ import { createClient, RedisClientType } from 'redis';
 import badgeNftSql from '../../queries/badge-nft.sql';
 
 interface NFTBadgeSpec {
+  accountId: string;
+  nearNetwork: string;
   dbConnectionString: string;
   statsGalleryConnectionString: string;
 }
@@ -18,20 +20,14 @@ export default (spec: NFTBadgeSpec): BadgeService => {
     await cacheLayer.connect();
 
     indexerPool = createPool(spec.dbConnectionString, {
-      maximumPoolSize: 30,
+      maximumPoolSize: 5,
       statementTimeout: 'DISABLE_TIMEOUT',
       idleTimeout: 'DISABLE_TIMEOUT',
       idleInTransactionSessionTimeout: 'DISABLE_TIMEOUT',
     });
 
-    console.log(
-      'Pool test:',
-      spec.dbConnectionString,
-      await indexerPool.one(sql`select 1 as should_be_1`),
-    );
-
     statsGalleryCache = createPool(spec.statsGalleryConnectionString, {
-      maximumPoolSize: 30,
+      maximumPoolSize: 5,
       statementTimeout: 'DISABLE_TIMEOUT',
       idleTimeout: 'DISABLE_TIMEOUT',
       idleInTransactionSessionTimeout: 'DISABLE_TIMEOUT',
