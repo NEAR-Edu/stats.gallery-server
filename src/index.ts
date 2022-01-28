@@ -12,6 +12,8 @@ import routes from './routes';
 import retry from './utils/retry';
 import { createClient, RedisClientType } from 'redis';
 
+import BadgeControllers from './controllers/badge';
+
 const app = new Koa();
 const port = process.env['PORT'] || 3000;
 console.log('Listening on port ' + port + '...');
@@ -156,6 +158,15 @@ endpoints.forEach(async (endpoint, i) => {
   });
 
   index.use('/' + endpoints[i], router.routes(), router.allowedMethods());
+  const badgeController = await BadgeControllers({
+    dbConnectionString: connection,
+    statsGalleryConnectionString: process.env['CACHE_DB_CONNECTION']!,
+  });
+  index.use(
+    '/' + endpoints[i],
+    badgeController.routes(),
+    badgeController.allowedMethods(),
+  );
 });
 
 index.get('/status', async (ctx, next) => {
@@ -191,6 +202,7 @@ index.get('/card/:accountId/card.png', async (ctx, next) => {
   await next();
 });
 
+// TODO: create another cron for processing testnet as well
 const cronsList = initCronJobs({
   environment: process.env as Record<string, string>,
   cachePool,

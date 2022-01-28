@@ -4,8 +4,6 @@ import { createClient, RedisClientType } from 'redis';
 import badgeNftSql from '../../queries/badge-nft.sql';
 
 interface NFTBadgeSpec {
-  accountId: string;
-  nearNetwork: string;
   dbConnectionString: string;
   statsGalleryConnectionString: string;
 }
@@ -20,14 +18,20 @@ export default (spec: NFTBadgeSpec): BadgeService => {
     await cacheLayer.connect();
 
     indexerPool = createPool(spec.dbConnectionString, {
-      maximumPoolSize: 5,
+      maximumPoolSize: 30,
       statementTimeout: 'DISABLE_TIMEOUT',
       idleTimeout: 'DISABLE_TIMEOUT',
       idleInTransactionSessionTimeout: 'DISABLE_TIMEOUT',
     });
 
+    console.log(
+      'Pool test:',
+      spec.dbConnectionString,
+      await indexerPool.one(sql`select 1 as should_be_1`),
+    );
+
     statsGalleryCache = createPool(spec.statsGalleryConnectionString, {
-      maximumPoolSize: 5,
+      maximumPoolSize: 30,
       statementTimeout: 'DISABLE_TIMEOUT',
       idleTimeout: 'DISABLE_TIMEOUT',
       idleInTransactionSessionTimeout: 'DISABLE_TIMEOUT',
@@ -56,19 +60,14 @@ export default (spec: NFTBadgeSpec): BadgeService => {
     }
   };
 
-  const isBadgeAttained = async (): Promise<boolean> => {
-    // check the redis cache first
-    // if redis cache is not empty, return result
-    // else, query the accounts_badge table.
-    // if record was found in the accounts table, store it in the redis database then return
-    // else query the indexerPool and return the result
-    const redisKey = serviceName + '_' + spec.accountId;
+  const isBadgeAttained = async (accountId: string): Promise<boolean> => {
+    const redisKey = serviceName + '_' + accountId;
     const cachedValue = await cacheLayer.get(redisKey);
     if (cachedValue !== null) {
       return Boolean(cachedValue);
     }
 
-    const isRecordPresent = await getAccountNFTTransferRecord(spec.accountId);
+    const isRecordPresent = await getAccountNFTTransferRecord(accountId);
 
     if (isRecordPresent) {
       await cacheLayer.set(redisKey, 'true');
@@ -76,11 +75,11 @@ export default (spec: NFTBadgeSpec): BadgeService => {
       return true;
     }
 
-    const result = await indexerPool.any(
-      badgeNftSql({ account_id: spec.accountId }),
+    const result = await indexerPool.one(
+      badgeNftSql({ account_id: accountId }),
     );
 
-    const performedNFTTransfer = Boolean(result);
+    const performedNFTTransfer = Boolean(result.result);
 
     if (performedNFTTransfer) {
       await cacheLayer.set(redisKey, 'true');
@@ -88,15 +87,18 @@ export default (spec: NFTBadgeSpec): BadgeService => {
         sql`insert into account_badge (badge_group_id, attained_value, account_id)
         values ((select badge_group_id from badge where badge_name = 'One-of-a-kind'), ${parseInt(
           result as unknown as string,
-        )}, ${spec.accountId})`,
+        )}, ${accountId})`,
       );
     }
+
+    // we set an expiration period for when the value we get is false as to give a chance
+    // for redis to be replinished just in case the user completes the badge in the future
+    await cacheLayer.set(redisKey, 'false', { EX: 600 });
 
     return performedNFTTransfer;
   };
 
   return Object.freeze({
-    // TODO: replace this
     IsBadgeAttained: isBadgeAttained,
     Init: init,
   });
