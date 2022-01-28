@@ -64,7 +64,7 @@ export default (spec: NFTBadgeSpec): BadgeService => {
     const redisKey = serviceName + '_' + accountId;
     const cachedValue = await cacheLayer.get(redisKey);
     if (cachedValue !== null) {
-      return Boolean(cachedValue);
+      return cachedValue === 'true';
     }
 
     const isRecordPresent = await getAccountNFTTransferRecord(accountId);
