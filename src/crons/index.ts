@@ -23,10 +23,12 @@ export default function initCronJobs(spec: CronJobSpec): CronJob[] {
 
   const transactionInvalidator = TransactionInvalidator({
     localCachePool: cachePool,
+    environment: environment,
   });
 
   const appActionInvalidator = AppActionInvalidator({
     localCachePool: cachePool,
+    environment: environment,
   });
 
   const appReceiptActions = AppTransactionReceiptCache({
