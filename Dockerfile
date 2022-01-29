@@ -1,5 +1,5 @@
 # build container
-FROM node:14.18.1-bullseye-slim AS build
+FROM node:16.13.2-bullseye-slim AS build
 
 RUN apt-get update || : && apt-get install build-essential cmake python3 -y
 
@@ -12,7 +12,7 @@ RUN npm ci
 RUN npm run build:prod
 
 # run container
-FROM node:14.18.1-bullseye-slim AS run
+FROM node:16.13.2-bullseye-slim AS run
 
 WORKDIR /usr/src/app
 # install python 3 for canvas NPM library

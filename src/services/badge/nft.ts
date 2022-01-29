@@ -20,7 +20,10 @@ export default (spec: NFTBadgeSpec): BadgeService => {
     indexerPool = createPool(spec.dbConnectionString, {
       maximumPoolSize: 30,
       statementTimeout: 'DISABLE_TIMEOUT',
+      connectionTimeout: 'DISABLE_TIMEOUT',
       idleTimeout: 'DISABLE_TIMEOUT',
+      // this has to be set manually as there is a misleading error in the slonik package
+      // saying this is unknown when this is not manually set
       idleInTransactionSessionTimeout: 'DISABLE_TIMEOUT',
     });
 
@@ -33,7 +36,10 @@ export default (spec: NFTBadgeSpec): BadgeService => {
     statsGalleryCache = createPool(spec.statsGalleryConnectionString, {
       maximumPoolSize: 30,
       statementTimeout: 'DISABLE_TIMEOUT',
+      connectionTimeout: 'DISABLE_TIMEOUT',
       idleTimeout: 'DISABLE_TIMEOUT',
+      // this has to be set manually as there is a misleading error in the slonik package
+      // saying this is unknown when this is not manually set
       idleInTransactionSessionTimeout: 'DISABLE_TIMEOUT',
     });
   };
@@ -64,7 +70,7 @@ export default (spec: NFTBadgeSpec): BadgeService => {
     const redisKey = serviceName + '_' + accountId;
     const cachedValue = await cacheLayer.get(redisKey);
     if (cachedValue !== null) {
-      return Boolean(cachedValue);
+      return cachedValue === 'true';
     }
 
     const isRecordPresent = await getAccountNFTTransferRecord(accountId);
