@@ -24,7 +24,10 @@ const index = new Router();
 const endpoints = process.env['ENDPOINT']!.split(',').map(s => s.trim());
 const connections = process.env['DB_CONNECTION']!.split(',').map(s => s.trim());
 const pools: DatabasePool[] = [];
-const cachePool = createPool(process.env['CACHE_DB_CONNECTION']!);
+const cachePool = createPool(process.env['CACHE_DB_CONNECTION']!, {
+  statementTimeout: 'DISABLE_TIMEOUT',
+  connectionTimeout: 'DISABLE_TIMEOUT',
+});
 const indexerDatabaseString = connections[endpoints.indexOf('mainnet')];
 const indexerPool = createPool(indexerDatabaseString, {
   statementTimeout: 'DISABLE_TIMEOUT',
@@ -56,8 +59,8 @@ endpoints.forEach(async (endpoint, i) => {
   const pool = createPool(connection, {
     maximumPoolSize: 50,
     statementTimeout: 'DISABLE_TIMEOUT',
+    connectionTimeout: 'DISABLE_TIMEOUT',
     idleTimeout: 'DISABLE_TIMEOUT',
-    idleInTransactionSessionTimeout: 'DISABLE_TIMEOUT',
   });
   pools.push(pool);
 

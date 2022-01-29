@@ -33,7 +33,39 @@ export default (range: TimestampRange, limit: number) => {
       action_receipt_action 
     where ${sql.join(conditions, sql` and `)}
       and action_kind = 'FUNCTION_CALL'
-      and args ->> 'method_name' like 'nft_%'
+      and args ->> 'method_name' in (
+        'nft_approve',
+        'nft_approve_owner',
+        'nft_batch_approve',
+        'nft_batch_burn',
+        'nft_batch_mint',
+        'nft_batch_transfer',
+        'nft_burn',
+        'nft_buy',
+        'nft_create_series',
+        'nft_create_type',
+        'nft_decrease_series_copies',
+        'nft_metadata',
+        'nft_mint',
+        'nft_mint_and_approve',
+        'nft_mint_many',
+        'nft_mint_one',
+        'nft_mints',
+        'nft_mint_to',
+        'nft_mint_type',
+        'nft_on_approve',
+        'nft_on_batch_approve',
+        'nft_revoke',
+        'nft_revoke_all',
+        'nft_series_create',
+        'nft_series_mint',
+        'nft_set_series_price',
+        'nft_tokens',
+        'nft_tokens_for_owner',
+        'nft_transfer',
+        'nft_transfer_payout',
+        'nft_transfer_unsafe'
+      )
     group by
       receipt_receiver_account_id
     order by number_of_transactions desc

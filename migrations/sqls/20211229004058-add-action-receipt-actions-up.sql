@@ -34,3 +34,9 @@ create index action_receipt_action_args_amount_idx
 create index action_receipt_action_args_receiver_id_idx
     on action_receipt_action (((args -> 'args_json'::text) ->> 'receiver_id'::text))
     where ((action_kind = 'FUNCTION_CALL'::action_kind) AND ((args ->> 'args_json'::text) IS NOT NULL));
+
+create index action_receipt_actions_receipt_receiver_account_id_idx
+    on action_receipt_action (receipt_receiver_account_id);
+
+create index action_receipt_actions_action_kind_idx
+    on action_receipt_action (action_kind);
