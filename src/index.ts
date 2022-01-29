@@ -33,7 +33,10 @@ const cachePool = createPool(process.env['CACHE_DB_CONNECTION']!, {
 const indexerDatabaseString = connections[endpoints.indexOf('mainnet')];
 const indexerPool = createPool(indexerDatabaseString, {
   statementTimeout: 'DISABLE_TIMEOUT',
+  connectionTimeout: 'DISABLE_TIMEOUT',
   idleTimeout: 'DISABLE_TIMEOUT',
+  // this has to be set manually as there is a misleading error in the slonik package
+  // saying this is unknown when this is not manually set
   idleInTransactionSessionTimeout: 'DISABLE_TIMEOUT',
 });
 
@@ -45,6 +48,13 @@ process.on('exit', async () => {
   } catch (error) {
     console.log('Error closing cache connection pools', error);
   }
+});
+
+// this is placed here in order to handle unhandle rejections so that the app won't exit
+// TODO: remove this when we have audited all the code paths and made sure that there is no throwing unhandled rejections
+process.on('unhandledRejection', (reason, p) => {
+  console.log('Unhandled Rejection', reason);
+  // application specific logging, throwing an error, or other logic here
 });
 
 if (endpoints.length === 0 || endpoints.length !== connections.length) {
@@ -63,6 +73,9 @@ endpoints.forEach(async (endpoint, i) => {
     statementTimeout: 'DISABLE_TIMEOUT',
     connectionTimeout: 'DISABLE_TIMEOUT',
     idleTimeout: 'DISABLE_TIMEOUT',
+    // this has to be set manually as there is a misleading error in the slonik package
+    // saying this is unknown when this is not manually set
+    idleInTransactionSessionTimeout: 'DISABLE_TIMEOUT',
   });
   pools.push(pool);
 

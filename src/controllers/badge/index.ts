@@ -12,7 +12,11 @@ export default async (spec: NFTControllerSpec): Promise<Router> => {
     dbConnectionString: spec.dbConnectionString,
     statsGalleryConnectionString: spec.statsGalleryConnectionString,
   });
-  await nftBadgeService.Init();
+  try {
+    await nftBadgeService.Init();
+  } catch (error) {
+    console.error(error);
+  }
 
   controllers.get('/v2/badge-nft', async (ctx, next) => {
     try {
