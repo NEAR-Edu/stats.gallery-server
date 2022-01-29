@@ -125,7 +125,7 @@ export default (spec: AppActionReceiptsSpec): CronJob => {
   };
 
   return Object.freeze({
-    isEnabled: true,
+    isEnabled: !spec.environment['NO_UPDATE_CACHE'],
     cronName,
     schedule: '*/1 * * * *', // every 1 minute,
     run,

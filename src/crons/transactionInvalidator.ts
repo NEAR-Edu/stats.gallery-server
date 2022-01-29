@@ -4,6 +4,7 @@ import { DAY } from '../utils/constants';
 
 type TransactionInvalidatorCacheSpec = {
   localCachePool: DatabasePool;
+  environment: Record<string, string>;
 };
 
 export default (spec: TransactionInvalidatorCacheSpec): CronJob => {
@@ -23,7 +24,7 @@ export default (spec: TransactionInvalidatorCacheSpec): CronJob => {
   };
 
   return Object.freeze({
-    isEnabled: true,
+    isEnabled: !spec.environment['NO_UPDATE_CACHE'],
     cronName,
     schedule: '0 0 * * *', // every day
     run,
