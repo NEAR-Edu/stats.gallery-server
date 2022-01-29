@@ -54,7 +54,7 @@ endpoints.forEach(async (endpoint, i) => {
   console.log('Connection', connection);
 
   const pool = createPool(connection, {
-    maximumPoolSize: 31,
+    maximumPoolSize: 50,
     statementTimeout: 'DISABLE_TIMEOUT',
     idleTimeout: 'DISABLE_TIMEOUT',
     idleInTransactionSessionTimeout: 'DISABLE_TIMEOUT',
