@@ -8,8 +8,8 @@ export default (params: Params) => {
       select *
       from action_receipt_actions
       where action_kind = 'FUNCTION_CALL'
+        and receipt_receiver_account_id = ${params.account_id}
         and args ->> 'method_name' = 'nft_transfer'
-        and args -> 'args_json' ->> 'receiver_id' = ${params.account_id}
     )
   `;
 };
