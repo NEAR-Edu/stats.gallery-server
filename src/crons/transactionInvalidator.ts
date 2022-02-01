@@ -5,11 +5,12 @@ import { DAY } from '../utils/constants';
 type TransactionInvalidatorCacheSpec = {
   localCachePool: DatabasePool;
   environment: Record<string, string>;
+  nearNetwork: string;
 };
 
 export default (spec: TransactionInvalidatorCacheSpec): CronJob => {
-  const cronName = 'TRANSACTION_INVALIDATOR';
-  const { localCachePool } = spec;
+  const { localCachePool, nearNetwork } = spec;
+  const cronName = `${nearNetwork.toUpperCase()}_TRANSACTION_INVALIDATOR`;
 
   const run = async () => {
     // Add a 1 day allowance before invalidating transactions

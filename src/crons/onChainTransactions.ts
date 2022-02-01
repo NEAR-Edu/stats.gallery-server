@@ -6,6 +6,7 @@ type OnChainTransactionsCacheSpec = {
   localCachePool: DatabasePool;
   indexerCachepool: DatabasePool;
   environment: Record<string, string>;
+  nearNetwork: string;
 };
 
 interface txnProps {
@@ -33,8 +34,8 @@ type localCacheTxn = Omit<
 >;
 
 export default (spec: OnChainTransactionsCacheSpec): CronJob => {
-  const { localCachePool, indexerCachepool } = spec;
-  const cronName = 'TRANSACTIONS_CACHE';
+  const { localCachePool, indexerCachepool, nearNetwork } = spec;
+  const cronName = `${nearNetwork.toUpperCase()}_TRANSACTIONS_CACHE`;
 
   const run = async () => {
     // STEP 1: determine the starting epoch — if this is the first time for the job to run, create a new entry

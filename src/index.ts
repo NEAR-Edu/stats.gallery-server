@@ -30,20 +30,11 @@ const cachePool = createPool(process.env['CACHE_DB_CONNECTION']!, {
   statementTimeout: 'DISABLE_TIMEOUT',
   connectionTimeout: 'DISABLE_TIMEOUT',
 });
-const indexerDatabaseString = connections[endpoints.indexOf('mainnet')];
-const indexerPool = createPool(indexerDatabaseString, {
-  statementTimeout: 'DISABLE_TIMEOUT',
-  connectionTimeout: 'DISABLE_TIMEOUT',
-  idleTimeout: 'DISABLE_TIMEOUT',
-  // this has to be set manually as there is a misleading error in the slonik package
-  // saying this is unknown when this is not manually set
-  idleInTransactionSessionTimeout: 'DISABLE_TIMEOUT',
-});
 
 // Ensure connection pools are closed on exit to avoid memory leaks
 process.on('exit', async () => {
   try {
-    await Promise.all([await cachePool.end(), await indexerPool.end()]);
+    await cachePool.end();
     console.log('Successfully closed database connections');
   } catch (error) {
     console.log('Error closing cache connection pools', error);
@@ -79,11 +70,34 @@ endpoints.forEach(async (endpoint, i) => {
   });
   pools.push(pool);
 
-  console.log(
-    'Pool test:',
-    connection,
-    await pool.one(sql`select 1 as should_be_1`),
-  );
+  const cronsList = initCronJobs({
+    environment: process.env as Record<string, string>,
+    cachePool,
+    indexerPool: pool,
+    nearNetwork: endpoint,
+  });
+
+  cronsList.forEach(cron => {
+    if (cron.isEnabled) {
+      schedule(cron.schedule, async () => {
+        try {
+          await cron.run();
+        } catch (error) {
+          console.log(`Error in running cron ${cron.cronName}`, error);
+        }
+      });
+    }
+  });
+
+  try {
+    console.log(
+      'Pool test:',
+      connection,
+      await pool.one(sql`select 1 as should_be_1`),
+    );
+  } catch (error) {
+    console.error(error);
+  }
 
   const redis = createClient({ url: process.env['REDIS_URL'] });
   redis.on('error', err => console.log('Redis Client Error', err));
@@ -213,25 +227,6 @@ index.get('/card/:accountId/card.png', async (ctx, next) => {
     ctx.status = 500;
   }
   await next();
-});
-
-// TODO: create another cron for processing testnet as well
-const cronsList = initCronJobs({
-  environment: process.env as Record<string, string>,
-  cachePool,
-  indexerPool,
-});
-
-cronsList.forEach(cron => {
-  if (cron.isEnabled) {
-    schedule(cron.schedule, async () => {
-      try {
-        await cron.run();
-      } catch (error) {
-        console.log(`Error in running cron ${cron.cronName}`, error);
-      }
-    });
-  }
 });
 
 app.use(index.routes()).use(index.allowedMethods());

@@ -6,6 +6,7 @@ type AppActionReceiptsSpec = {
   localCachePool: DatabasePool;
   indexerCachepool: DatabasePool;
   environment: Record<string, string>;
+  nearNetwork: string;
 };
 
 interface ActionReceiptActionProps {
@@ -19,8 +20,8 @@ interface ActionReceiptActionProps {
 }
 
 export default (spec: AppActionReceiptsSpec): CronJob => {
-  const { localCachePool, indexerCachepool } = spec;
-  const cronName = 'APP_ACTIONS_RECEIPT';
+  const { localCachePool, indexerCachepool, nearNetwork } = spec;
+  const cronName = `${nearNetwork.toUpperCase()}_APP_ACTIONS_RECEIPT`;
 
   const run = async () => {
     const startEpoch = await (async (): Promise<number> => {
