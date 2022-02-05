@@ -47,7 +47,7 @@ export default (spec: DAPPSpec): LeaderboardService => {
     }
 
     const oneWeekAgo = Date.now() - DAY * 7;
-    const accsWithNoOfTransactions = await indexerPool.many(
+    const accsWithNoOfTransactions = await statsGalleryCache.many(
       mostActiveWalletSql(
         { after_block_timestamp: oneWeekAgo * 1_000_000 },
         100,
