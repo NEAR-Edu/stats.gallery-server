@@ -13,6 +13,7 @@ import retry from './utils/retry';
 import { createClient, RedisClientType } from 'redis';
 
 import BadgeControllers from './controllers/badge';
+import LeaderboardControllers from './controllers/leaderboard';
 
 const app = new Koa();
 const port = process.env['PORT'] || 3000;
@@ -175,10 +176,20 @@ endpoints.forEach(async (endpoint, i) => {
     dbConnectionString: connection,
     statsGalleryConnectionString: process.env['CACHE_DB_CONNECTION']!,
   });
+  const leaderBoardController = await LeaderboardControllers({
+    dbConnectionString: connection,
+    statsGalleryConnectionString: process.env['CACHE_DB_CONNECTION']!,
+    redisCacheConnectionString: process.env['REDIS_URL']!,
+  });
   index.use(
     '/' + endpoints[i],
     badgeController.routes(),
     badgeController.allowedMethods(),
+  );
+  index.use(
+    '/' + endpoints[i],
+    leaderBoardController.routes(),
+    leaderBoardController.allowedMethods(),
   );
 });
 
