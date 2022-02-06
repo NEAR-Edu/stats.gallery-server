@@ -1,6 +1,6 @@
 import { BadgeService } from './badgeService';
 import { createPool, DatabasePool, sql } from 'slonik';
-import { createClient, RedisClientType } from 'redis';
+import { createClient } from 'redis';
 import badgeNftSql from '../../queries/badge-nft.sql';
 
 interface NFTBadgeSpec {
@@ -91,9 +91,9 @@ export default (spec: NFTBadgeSpec): BadgeService => {
       await cacheLayer.set(redisKey, 'true');
       await statsGalleryCache.query(
         sql`insert into account_badge (badge_group_id, attained_value, account_id)
-        values ((select badge_group_id from badge where badge_name = 'One-of-a-kind'), ${parseInt(
-          result as unknown as string,
-        )}, ${accountId})`,
+        values (
+          (select badge_group_id from badge where badge_name = 'One-of-a-kind'),
+          ${result.result}, (select id from account where account_id = ${accountId}))`,
       );
     }
 

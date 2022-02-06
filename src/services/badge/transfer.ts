@@ -1,6 +1,6 @@
 import { BadgeService } from './badgeService';
 import { createPool, DatabasePool, sql } from 'slonik';
-import { createClient, RedisClientType } from 'redis';
+import { createClient } from 'redis';
 import badgeTransferSql from '../../queries/badge-transfer.sql';
 
 interface TransferBadgeSpec {
@@ -84,7 +84,6 @@ export default (spec: TransferBadgeSpec): BadgeService => {
     const result = await indexerPool.one(
       badgeTransferSql({ account_id: accountId }),
     );
-    console.log(result);
 
     const performedTransfer = Boolean(result.result);
 
