@@ -12,8 +12,8 @@ export default (spec: TransactionInvalidatorCacheSpec): CronJob => {
   const { localCachePool } = spec;
 
   const run = async () => {
-    // Add a 1 day allowance before invalidating transactions
-    const lastSevenDays = Date.now() - DAY * 8;
+    // Add a 0.5 day allowance before invalidating transactions
+    const lastSevenDays = Date.now() - DAY * 7.5;
     const lastSevenDaysEpoch = lastSevenDays * 1_000_000;
 
     const res = await localCachePool.query(sql`
@@ -26,7 +26,7 @@ export default (spec: TransactionInvalidatorCacheSpec): CronJob => {
   return Object.freeze({
     isEnabled: !spec.environment['NO_UPDATE_CACHE'],
     cronName,
-    schedule: '0 0 * * *', // every day
+    schedule: '0 */8 * * *', // every 8 hours
     run,
   });
 };
