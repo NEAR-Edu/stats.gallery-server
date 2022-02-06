@@ -181,12 +181,12 @@ endpoints.forEach(async (endpoint, i) => {
     statsGalleryConnectionString: process.env['CACHE_DB_CONNECTION']!,
     redisCacheConnectionString: process.env['REDIS_URL']!,
   });
-  await index.use(
+  index.use(
     '/' + endpoints[i],
     badgeController.routes(),
     badgeController.allowedMethods(),
   );
-  await index.use(
+  index.use(
     '/' + endpoints[i],
     leaderBoardController.routes(),
     leaderBoardController.allowedMethods(),

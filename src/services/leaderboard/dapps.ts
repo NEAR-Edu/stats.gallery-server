@@ -1,4 +1,10 @@
-import { createPool, DatabasePool, sql } from 'slonik';
+import {
+  createPool,
+  DatabasePool,
+  QueryResultRow,
+  sql,
+  SqlTaggedTemplate,
+} from 'slonik';
 import { createClient } from 'redis';
 import mostActiveWalletSql from '../../queries/most-active-wallet-within-range.sql';
 import { DAY } from '../../utils/constants';
@@ -47,7 +53,7 @@ export default (spec: DAPPSpec): LeaderboardService => {
     }
 
     const oneWeekAgo = Date.now() - DAY * 7;
-    const accsWithNoOfTransactions = await statsGalleryCache.many(
+    const accsWithNoOfTransactions = await statsGalleryCache.any(
       mostActiveWalletSql(
         { after_block_timestamp: oneWeekAgo * 1_000_000 },
         100,
@@ -64,7 +70,7 @@ export default (spec: DAPPSpec): LeaderboardService => {
           receipt_predecessor_account_id as account_id
         from
           action_receipt_actions where action_kind = 'DEPLOY_CONTRACT'
-          and receipt_predecessor_account_id in (${accounts.join(',')})
+          and receipt_predecessor_account_id in (${sql.join(accounts, sql`,`)})
         group by receipt_predecessor_account_id
         limit 100`,
     );
