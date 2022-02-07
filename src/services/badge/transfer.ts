@@ -44,7 +44,7 @@ export default (spec: TransferBadgeSpec): BadgeService => {
     });
   };
 
-  const getAccountNFTTransferRecord = async (
+  const getAccountTokenTransfer = async (
     accountId: string,
   ): Promise<boolean> => {
     try {
@@ -73,7 +73,7 @@ export default (spec: TransferBadgeSpec): BadgeService => {
       return cachedValue === 'true';
     }
 
-    const isRecordPresent = await getAccountNFTTransferRecord(accountId);
+    const isRecordPresent = await getAccountTokenTransfer(accountId);
 
     if (isRecordPresent) {
       await cacheLayer.set(redisKey, 'true');
