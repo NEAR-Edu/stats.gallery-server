@@ -49,19 +49,25 @@ export default (spec: TransferBadgeSpec): BadgeService => {
   ): Promise<boolean> => {
     try {
       await statsGalleryCache.one(
-        sql`select
-              account_badge.id
-            from
-              account_badge
-            inner join
-              badge
-            on
-              badge.badge_group_id = account_badge.badge_group_id
-            where
-              account_badge.account_id = ${accountId} and badge.badge_name = 'Join the party!'`,
+        sql`
+        select
+          account_badge.id
+        from
+          account_badge
+        inner join
+          badge
+        on
+          badge.badge_group_id = account_badge.badge_group_id
+        inner join
+          account
+        on
+          account.id = account_badge.account_id
+        where
+          account.account_id = ${accountId} and badge.badge_name = 'Join the party!'`,
       );
       return true;
     } catch (error) {
+      console.error(error);
       return false;
     }
   };
