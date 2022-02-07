@@ -88,13 +88,13 @@ export default (spec: NFTBadgeSpec): BadgeService => {
     const performedNFTTransfer = Boolean(result.result);
 
     if (performedNFTTransfer) {
-      await cacheLayer.set(redisKey, 'true');
       await statsGalleryCache.query(
         sql`insert into account_badge (badge_group_id, attained_value, account_id)
         values (
           (select badge_group_id from badge where badge_name = 'One-of-a-kind'),
           ${result.result}, (select id from account where account_id = ${accountId}))`,
       );
+      await cacheLayer.set(redisKey, 'true');
     }
 
     // we set an expiration period for when the value we get is false as to give a chance
