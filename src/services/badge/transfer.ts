@@ -1,5 +1,5 @@
 import { BadgeService } from './badgeService';
-import { createPool, DatabasePool, sql } from 'slonik';
+import { createPool, DatabasePool, sql, QueryResultRow } from 'slonik';
 import { createClient } from 'redis';
 import badgeTransferSql from '../../queries/badge-transfer.sql';
 
@@ -46,12 +46,18 @@ export default (spec: TransferBadgeSpec): BadgeService => {
 
   const getAccountTokenTransfer = async (
     accountId: string,
-  ): Promise<boolean> => {
+    badgeNames: string[],
+  ): Promise<readonly QueryResultRow[]> => {
     try {
-      await statsGalleryCache.one(
+      const result = await statsGalleryCache.many(
         sql`
         select
-          account_badge.id
+          account_badge.attained_value,
+          badge.badge_name,
+          badge.bagde_description,
+          badge.required_value,
+          badge.rarity_fraction,
+          badge.badge_group_id
         from
           account_badge
         inner join
@@ -63,12 +69,16 @@ export default (spec: TransferBadgeSpec): BadgeService => {
         on
           account.id = account_badge.account_id
         where
-          account.account_id = ${accountId} and badge.badge_name = 'Join the party!'`,
+          account.account_id = ${accountId} and badge.badge_name in ${sql.join(
+          badgeNames,
+          sql`,`,
+        )}`,
       );
-      return true;
+      return result;
     } catch (error) {
       console.error(error);
-      return false;
+      const empty: readonly QueryResultRow[] = [];
+      return empty;
     }
   };
 
@@ -79,10 +89,28 @@ export default (spec: TransferBadgeSpec): BadgeService => {
       return cachedValue === 'true';
     }
 
-    const isRecordPresent = await getAccountTokenTransfer(accountId);
+    const transferBadges = await statsGalleryCache.query(sql`
+      select
+        badge.badge_name as badge_name,
+        badge.required_level as level
+      from
+        badge
+      inner join badge_group on badge.badge_group_id = badge_group.id
+      where
+        badge_group.function_name = 'badge-transfer'
+      order by
+        required_level asc;
+    `);
 
-    if (isRecordPresent) {
-      await cacheLayer.set(redisKey, 'true');
+    const badgeNames: string[] = [];
+    transferBadges.rows.forEach(tb => {
+      badgeNames.push(tb.badge_name as string);
+    });
+
+    const badgesAttained = await getAccountTokenTransfer(accountId, badgeNames);
+
+    if (badgesAttained.length > 0) {
+      await cacheLayer.set(redisKey, JSON.stringify(badgesAttained));
 
       return true;
     }
@@ -94,18 +122,47 @@ export default (spec: TransferBadgeSpec): BadgeService => {
     const performedTransfer = Boolean(result.result);
 
     if (performedTransfer) {
+      const attainedBadges = [];
+      const valuesToInsert = [];
+      for (const badge of transferBadges.rows) {
+        const transfers = Number(result!.result) || 0;
+        if (transfers >= Number(badge.level)) {
+          attainedBadges.push({
+            attained_value: transfers,
+            badge_group_id: badge.badge_group_id,
+            badge_name: badge.badge_name,
+            bagde_description: badge.bagde_description,
+            required_value: badge.required_value,
+            rarity_fraction: badge.rarity_fraction,
+          });
+
+          valuesToInsert.push({
+            badge_group_id: badge.badge_group_id,
+            attained_value: transfers,
+            account_id: accountId,
+          });
+        }
+      }
+
       await statsGalleryCache.query(
         sql`insert into account_badge (badge_group_id, attained_value, account_id)
-        values (
-          (select badge_group_id from badge where badge_name = 'Join the party!'),
-          ${result.result}, (select id from account where account_id = ${accountId}))`,
+        select 
+          *
+        from ${sql.unnest(valuesToInsert as readonly any[], [
+          'uuid',
+          'numeric',
+          'uuid',
+        ])}`,
       );
-      await cacheLayer.set(redisKey, 'true');
+
+      await cacheLayer.set(redisKey, JSON.stringify(attainedBadges), {
+        EX: 86_400,
+      });
     }
 
     // we set an expiration period for when the value we get is false as to give a chance
     // for redis to be replinished just in case the user completes the badge in the future
-    await cacheLayer.set(redisKey, 'false', { EX: 600 });
+    await cacheLayer.set(redisKey, JSON.stringify({}), { EX: 600 });
 
     return performedTransfer;
   };
