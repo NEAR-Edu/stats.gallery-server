@@ -3,6 +3,7 @@ import { createPool, DatabasePool, sql } from 'slonik';
 import { createClient } from 'redis';
 import badgeStakeSql from '../../queries/badge-stake.sql';
 import badgeFunctionDetails from '../../queries/badge-function-details.sql';
+import insertOrUpdateAccountBadge from '../../queries/badge-service/insertOrUpdate.sql';
 import determineAchievedBadges from './determineAchievedBadges';
 
 interface StakeBadgeSpec {
@@ -73,15 +74,13 @@ export default (spec: StakeBadgeSpec): BadgeService => {
       );
 
       if (attainedBadges.length > 0) {
-        await statsGalleryCache.query(sql`
-          insert
-            into
-          account_badge (badge_group_id, attained_value, account_id)
-          values (${attainedBadges[0].badge_group_id}, ${transfers}, (select id from account where account_id = ${accountId}))
-          on conflict on constraint account_badge_badge_group_account_idx
-          do
-            update set attained_value = ${transfers}
-        `);
+        await statsGalleryCache.query(
+          insertOrUpdateAccountBadge(
+            attainedBadges[0].badge_group_id,
+            transfers,
+            accountId,
+          ),
+        );
 
         await cacheLayer.set(redisKey, JSON.stringify(attainedBadges), {
           EX: 3_600,
