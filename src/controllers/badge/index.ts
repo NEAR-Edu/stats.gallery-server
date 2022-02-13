@@ -2,6 +2,7 @@ import Router from '@koa/router';
 import NFTBadgeService from '../../services/badge/nft';
 import TransferPerformedBadgeService from '../../services/badge/transfer';
 import StakePerformedBadgeService from '../../services/badge/stake';
+import DeployBadgeService from '../../services/badge/deploy';
 
 interface NFTControllerSpec {
   dbConnectionString: string;
@@ -22,10 +23,15 @@ export default async (spec: NFTControllerSpec): Promise<Router> => {
     dbConnectionString: spec.dbConnectionString,
     statsGalleryConnectionString: spec.statsGalleryConnectionString,
   });
+  const deployBadgeService = DeployBadgeService({
+    dbConnectionString: spec.dbConnectionString,
+    statsGalleryConnectionString: spec.statsGalleryConnectionString,
+  });
   try {
     await nftBadgeService.Init();
     await transferBadgeService.Init();
     await stakeBadgeService.Init();
+    await deployBadgeService.Init();
   } catch (error) {
     console.error(error);
   }
@@ -98,6 +104,31 @@ export default async (spec: NFTControllerSpec): Promise<Router> => {
     } catch (error) {
       console.log(
         `something went wrong while fetching user's stake badge eligibility`,
+        error,
+      );
+      ctx.response.status = 500;
+    }
+    await next();
+  });
+
+  controllers.get('/v2/badge-deploy', async (ctx, next) => {
+    try {
+      const { query } = ctx.request;
+      if (query.account_id === undefined || query.account_id === null) {
+        ctx.response.status = 400;
+        ctx.response.body = {
+          message: 'account_id is required',
+        };
+        await next();
+      }
+
+      const res = await deployBadgeService.IsBadgeAttained(
+        query.account_id as string,
+      );
+      ctx.response.body = { result: res };
+    } catch (error) {
+      console.log(
+        `something went wrong while fetching user's deploy badge eligibility`,
         error,
       );
       ctx.response.status = 500;
