@@ -11,7 +11,7 @@ interface TransferBadgeSpec {
 }
 
 export default (spec: TransferBadgeSpec): BadgeService => {
-  const serviceName = 'badge_nft_service';
+  const serviceName = 'badge_transfer_service';
   const cacheLayer = createClient({ url: process.env['REDIS_URL'] });
   let indexerPool: DatabasePool;
   let statsGalleryCache: DatabasePool;
