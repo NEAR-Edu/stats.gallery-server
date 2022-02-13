@@ -2,6 +2,7 @@ import { BadgeService } from './badgeService';
 import { createPool, DatabasePool, sql } from 'slonik';
 import { createClient } from 'redis';
 import badgeStakeSql from '../../queries/badge-stake.sql';
+import badgeFunctionDetails from '../../queries/badge-function-details.sql';
 
 interface StakeBadgeSpec {
   dbConnectionString: string;
@@ -44,46 +45,18 @@ export default (spec: StakeBadgeSpec): BadgeService => {
     });
   };
 
-  const getAccountStakeRecord = async (accountId: string): Promise<boolean> => {
-    try {
-      await statsGalleryCache.one(
-        sql`
-        select
-          account_badge.id
-        from
-          account_badge
-        inner join
-          badge
-        on
-          badge.badge_group_id = account_badge.badge_group_id
-        inner join
-          account
-        on
-          account.id = account_badge.account_id
-        where
-          account.account_id = ${accountId} and badge.badge_name = 'ca$h flow'`,
-      );
-      return true;
-    } catch (error) {
-      console.error(error);
-      return false;
-    }
-  };
-
-  const isBadgeAttained = async (accountId: string): Promise<boolean> => {
+  const isBadgeAttained = async (
+    accountId: string,
+  ): Promise<readonly any[]> => {
     const redisKey = serviceName + '_' + accountId;
     const cachedValue = await cacheLayer.get(redisKey);
     if (cachedValue !== null) {
-      return cachedValue === 'true';
+      return JSON.parse(cachedValue) as readonly any[];
     }
 
-    const isRecordPresent = await getAccountStakeRecord(accountId);
-
-    if (isRecordPresent) {
-      await cacheLayer.set(redisKey, 'true');
-
-      return true;
-    }
+    const stakeBadges = await statsGalleryCache.query(
+      badgeFunctionDetails('badge-transfer'),
+    );
 
     const result = await indexerPool.one(
       badgeStakeSql({ account_id: accountId }),
@@ -92,20 +65,47 @@ export default (spec: StakeBadgeSpec): BadgeService => {
     const performedTransfer = Boolean(result.result);
 
     if (performedTransfer) {
-      await statsGalleryCache.query(
-        sql`insert into account_badge (badge_group_id, attained_value, account_id)
-        values (
-          (select badge_group_id from badge where badge_name = 'ca$h flow'),
-          ${result.result}, (select id from account where account_id = ${accountId}))`,
-      );
-      await cacheLayer.set(redisKey, 'true');
+      const attainedBadges = [];
+      const transfers = Number(result!.result) || 0;
+      for (const badge of stakeBadges.rows) {
+        if (transfers >= Number(badge.required_value)) {
+          attainedBadges.push({
+            attained_value: transfers,
+            badge_group_id: badge.badge_group_id,
+            badge_name: badge.badge_name,
+            badge_description: badge.badge_description,
+            required_value: badge.required_value,
+            rarity_fraction: badge.rarity_fraction,
+          });
+        }
+      }
+
+      if (attainedBadges.length > 0) {
+        await statsGalleryCache.query(sql`
+          insert
+            into
+          account_badge (badge_group_id, attained_value, account_id)
+          values (${attainedBadges[0].badge_group_id}, ${transfers}, (select id from account where account_id = ${accountId}))
+          on conflict on constraint account_badge_badge_group_account_idx
+          do
+            update set attained_value = ${transfers}
+        `);
+
+        await cacheLayer.set(redisKey, JSON.stringify(attainedBadges), {
+          EX: 3_600,
+        });
+
+        return attainedBadges as readonly any[];
+      }
+
+      return [] as readonly any[];
     }
 
     // we set an expiration period for when the value we get is false as to give a chance
     // for redis to be replinished just in case the user completes the badge in the future
-    await cacheLayer.set(redisKey, 'false', { EX: 600 });
+    await cacheLayer.set(redisKey, JSON.stringify([]), { EX: 600 });
 
-    return performedTransfer;
+    return [] as readonly any[];
   };
 
   return Object.freeze({
