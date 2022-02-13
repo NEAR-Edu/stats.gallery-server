@@ -2,6 +2,7 @@ import { BadgeService } from './badgeService';
 import { createPool, DatabasePool, sql, QueryResultRow } from 'slonik';
 import { createClient } from 'redis';
 import badgeTransferSql from '../../queries/badge-transfer.sql';
+import badgeFunctionDetails from '../../queries/badge-function-details.sql';
 
 interface TransferBadgeSpec {
   dbConnectionString: string;
@@ -53,21 +54,9 @@ export default (spec: TransferBadgeSpec): BadgeService => {
       return JSON.parse(cachedValue) as readonly any[];
     }
 
-    const transferBadges = await statsGalleryCache.query(sql`
-      select
-        badge.badge_name as badge_name,
-        badge.required_value,
-        badge.badge_group_id,
-        badge.badge_description,
-        badge.rarity_fraction
-      from
-        badge
-      inner join badge_group on badge.badge_group_id = badge_group.id
-      where
-        badge_group.function_name = 'badge-transfer'
-      order by
-        required_value asc;
-    `);
+    const transferBadges = await statsGalleryCache.query(
+      badgeFunctionDetails('badge-transfer'),
+    );
 
     const result = await indexerPool.one(
       badgeTransferSql({ account_id: accountId }),
