@@ -1,1 +1,1 @@
-drop index account_badge_badge_group_account_idx;
+drop constraint account_badge_badge_group_account_idx;
