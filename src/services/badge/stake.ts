@@ -3,6 +3,7 @@ import { createPool, DatabasePool, sql } from 'slonik';
 import { createClient } from 'redis';
 import badgeStakeSql from '../../queries/badge-stake.sql';
 import badgeFunctionDetails from '../../queries/badge-function-details.sql';
+import determineAchievedBadges from './determineAchievedBadges';
 
 interface StakeBadgeSpec {
   dbConnectionString: string;
@@ -62,23 +63,14 @@ export default (spec: StakeBadgeSpec): BadgeService => {
       badgeStakeSql({ account_id: accountId }),
     );
 
-    const performedTransfer = Boolean(result.result);
+    const performedStake = Boolean(result.result);
 
-    if (performedTransfer) {
-      const attainedBadges = [];
+    if (performedStake) {
       const transfers = Number(result!.result) || 0;
-      for (const badge of stakeBadges.rows) {
-        if (transfers >= Number(badge.required_value)) {
-          attainedBadges.push({
-            attained_value: transfers,
-            badge_group_id: badge.badge_group_id,
-            badge_name: badge.badge_name,
-            badge_description: badge.badge_description,
-            required_value: badge.required_value,
-            rarity_fraction: badge.rarity_fraction,
-          });
-        }
-      }
+      const attainedBadges = determineAchievedBadges(
+        transfers,
+        stakeBadges.rows,
+      );
 
       if (attainedBadges.length > 0) {
         await statsGalleryCache.query(sql`

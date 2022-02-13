@@ -3,6 +3,7 @@ import { createPool, DatabasePool, sql } from 'slonik';
 import { createClient } from 'redis';
 import badgeNftSql from '../../queries/badge-nft.sql';
 import badgeFunctionDetails from '../../queries/badge-function-details.sql';
+import determineAchievedBadges from './determineAchievedBadges';
 
 interface NFTBadgeSpec {
   dbConnectionString: string;
@@ -65,20 +66,8 @@ export default (spec: NFTBadgeSpec): BadgeService => {
     const performedNFTTransfer = Boolean(result.result);
 
     if (performedNFTTransfer) {
-      const attainedBadges = [];
       const transfers = Number(result!.result) || 0;
-      for (const badge of nftBadges.rows) {
-        if (transfers >= Number(badge.required_value)) {
-          attainedBadges.push({
-            attained_value: transfers,
-            badge_group_id: badge.badge_group_id,
-            badge_name: badge.badge_name,
-            badge_description: badge.badge_description,
-            required_value: badge.required_value,
-            rarity_fraction: badge.rarity_fraction,
-          });
-        }
-      }
+      const attainedBadges = determineAchievedBadges(transfers, nftBadges.rows);
 
       if (attainedBadges.length > 0) {
         await statsGalleryCache.query(sql`

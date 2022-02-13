@@ -3,6 +3,7 @@ import { createPool, DatabasePool, sql, QueryResultRow } from 'slonik';
 import { createClient } from 'redis';
 import badgeTransferSql from '../../queries/badge-transfer.sql';
 import badgeFunctionDetails from '../../queries/badge-function-details.sql';
+import determineAchievedBadges from './determineAchievedBadges';
 
 interface TransferBadgeSpec {
   dbConnectionString: string;
@@ -65,20 +66,11 @@ export default (spec: TransferBadgeSpec): BadgeService => {
     const performedTransfer = Boolean(result.result);
 
     if (performedTransfer) {
-      const attainedBadges = [];
       const transfers = Number(result!.result) || 0;
-      for (const badge of transferBadges.rows) {
-        if (transfers >= Number(badge.required_value)) {
-          attainedBadges.push({
-            attained_value: transfers,
-            badge_group_id: badge.badge_group_id,
-            badge_name: badge.badge_name,
-            badge_description: badge.badge_description,
-            required_value: badge.required_value,
-            rarity_fraction: badge.rarity_fraction,
-          });
-        }
-      }
+      const attainedBadges = determineAchievedBadges(
+        transfers,
+        transferBadges.rows,
+      );
 
       if (attainedBadges.length > 0) {
         await statsGalleryCache.query(sql`
