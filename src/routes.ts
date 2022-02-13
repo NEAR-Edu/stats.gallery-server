@@ -221,9 +221,10 @@ export default [
         }
       }
 
-      // expire in 10 minutes
+      // We are setting the expiry in an hour to give way for the new stats
+      // that came in to reflect the next time the route is triggered
       await cache.set('leaderboard-dapps-week', JSON.stringify(top5), {
-        EX: 600,
+        EX: 3600,
       });
 
       return top5;
@@ -265,9 +266,10 @@ export default [
         }
       }
 
-      // expire in 10 minutes
+      // We are setting the expiry in an hour to give way for the new stats
+      // that came in to reflect the next time the route is triggered
       await cache.set('leaderboard-nfts-week', JSON.stringify(top5), {
-        EX: 600,
+        EX: 3600,
       });
 
       return top5;
