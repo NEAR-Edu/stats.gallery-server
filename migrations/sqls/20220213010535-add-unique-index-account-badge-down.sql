@@ -1,0 +1,1 @@
+drop constraint account_badge_badge_group_account_idx;
