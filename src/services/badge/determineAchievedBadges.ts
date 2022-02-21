@@ -13,11 +13,11 @@ export default (
       badge_description: badge.badge_description,
       required_value: badge.required_value,
       rarity_fraction: badge.rarity_fraction,
-    }
+    };
     if (attainedValue >= Number(badge.required_value)) {
-      attainedBadges.push({ ...badgeInfo, achieved: true});
+      attainedBadges.push({ ...badgeInfo, achieved: true });
     } else {
-      attainedBadges.push({ ...badgeInfo, achieved: false});
+      attainedBadges.push({ ...badgeInfo, achieved: false });
     }
   }
 

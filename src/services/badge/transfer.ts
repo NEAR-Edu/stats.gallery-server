@@ -68,12 +68,9 @@ export default (spec: TransferBadgeSpec): BadgeService => {
 
     if (performedTransfer) {
       const transfers = Number(result!.result) || 0;
-      const badges = determineAchievedBadges(
-        transfers,
-        transferBadges.rows,
-      );
+      const badges = determineAchievedBadges(transfers, transferBadges.rows);
 
-      const badgeAttained = badges.some(badge => badge.achieved)
+      const badgeAttained = badges.some(badge => badge.achieved);
       if (badgeAttained) {
         await statsGalleryCache.query(
           insertOrUpdateAccountBadge(

@@ -68,12 +68,9 @@ export default (spec: NFTBadgeSpec): BadgeService => {
 
     if (performedNFTTransfer) {
       const transfers = Number(result!.result) || 0;
-      const badges = determineAchievedBadges(
-        transfers,
-        nftBadges.rows,
-      );
+      const badges = determineAchievedBadges(transfers, nftBadges.rows);
 
-      const badgeAttained = badges.some(badge => badge.achieved)
+      const badgeAttained = badges.some(badge => badge.achieved);
       if (badgeAttained) {
         await statsGalleryCache.query(
           insertOrUpdateAccountBadge(
