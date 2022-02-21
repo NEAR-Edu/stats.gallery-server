@@ -68,25 +68,27 @@ export default (spec: NFTBadgeSpec): BadgeService => {
 
     if (performedNFTTransfer) {
       const transfers = Number(result!.result) || 0;
-      const attainedBadges = determineAchievedBadges(transfers, nftBadges.rows);
+      const badges = determineAchievedBadges(
+        transfers,
+        nftBadges.rows,
+      );
 
-      if (attainedBadges.length > 0) {
+      const badgeAttained = badges.some(badge => badge.achieved)
+      if (badgeAttained) {
         await statsGalleryCache.query(
           insertOrUpdateAccountBadge(
-            attainedBadges[0].badge_group_id,
+            badges[0].badge_group_id,
             transfers,
             accountId,
           ),
         );
-
-        await cacheLayer.set(redisKey, JSON.stringify(attainedBadges), {
-          EX: 3_600,
-        });
-
-        return attainedBadges as readonly any[];
       }
 
-      return [] as readonly any[];
+      await cacheLayer.set(redisKey, JSON.stringify(badges), {
+        EX: 3_600,
+      });
+
+      return badges as readonly any[];
     }
 
     // we set an expiration period for when the value we get is false as to give a chance
