@@ -64,35 +64,25 @@ export default (spec: TransferBadgeSpec): BadgeService => {
       badgeDeploySql({ account_id: accountId }),
     );
 
-    const performedTransfer = Boolean(result.result);
+    const transfers = Number(result!.result) || 0;
+    const badges = determineAchievedBadges(transfers, deployBadges.rows);
 
-    if (performedTransfer) {
-      const transfers = Number(result!.result) || 0;
-      const badges = determineAchievedBadges(transfers, deployBadges.rows);
-
-      const badgeAttained = badges.some(badge => badge.achieved);
-      if (badgeAttained) {
-        await statsGalleryCache.query(
-          insertOrUpdateAccountBadge(
-            badges[0].badge_group_id,
-            transfers,
-            accountId,
-          ),
-        );
-      }
-
-      await cacheLayer.set(redisKey, JSON.stringify(badges), {
-        EX: 3_600,
-      });
-
-      return badges as readonly any[];
+    const badgeAttained = badges.some(badge => badge.achieved);
+    if (badgeAttained) {
+      await statsGalleryCache.query(
+        insertOrUpdateAccountBadge(
+          badges[0].badge_group_id,
+          transfers,
+          accountId,
+        ),
+      );
     }
 
-    // we set an expiration period for when the value we get is false as to give a chance
-    // for redis to be replinished just in case the user completes the badge in the future
-    await cacheLayer.set(redisKey, JSON.stringify([]), { EX: 600 });
+    await cacheLayer.set(redisKey, JSON.stringify(badges), {
+      EX: 3_600,
+    });
 
-    return [] as readonly any[];
+    return badges as readonly any[];
   };
 
   return Object.freeze({
