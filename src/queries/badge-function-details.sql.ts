@@ -7,7 +7,8 @@ export default (badgeFunction: string) => {
       badge.required_value,
       badge.badge_group_id,
       badge.badge_description,
-      badge.rarity_fraction
+      badge.rarity_fraction,
+      badge_group.function_name
     from
       badge
     inner join badge_group on badge.badge_group_id = badge_group.id
